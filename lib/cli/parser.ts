@@ -1,120 +1,68 @@
-/**
- * Command parser and executor for arshux
- * Handles parsing user input and executing appropriate commands
- */
-
+import * as commands from './commands';
 import { CommandOutput } from './types';
-import {
-  helpCommand,
-  aboutCommand,
-  clearCommand,
-  dateCommand,
-  loginCommand,
-  logoutCommand,
-  echoCommand,
-  themeCommand,
-  configCommand,
-  unknownCommand,
-} from './commands';
 
-/**
- * Command registry - maps command names to handlers
- */
-const commandRegistry: Record<string, (args: string[]) => Promise<CommandOutput[]>> = {
-  help: helpCommand,
-  about: aboutCommand,
-  clear: clearCommand,
-  date: dateCommand,
-  login: loginCommand,
-  logout: logoutCommand,
-  echo: echoCommand,
-  theme: themeCommand,
-  config: configCommand,
+// 1. آپ کی بتائی ہوئی کمانڈ رجسٹری (Organizational Framework)
+const COMMAND_REGISTRY: Record<string, { desc: string; usage: string }> = {
+  help: { desc: 'View all available commands', usage: 'help [command]' },
+  whoami: { desc: 'Display user identification', usage: 'whoami' },
+  projects: { desc: 'View active DigiD projects', usage: 'projects' },
+  theme: { desc: 'Change terminal colors', usage: 'theme [green|blue|amber]' },
+  clear: { desc: 'Clear the terminal screen', usage: 'clear' },
 };
 
-/**
- * Parse command line input
- * Handles quoted strings and argument parsing
- */
-export function parseInput(input: string): { command: string; args: string[] } {
-  const trimmed = input.trim();
+// 2. آپ کا 'Did you mean' الگورتھم
+const getSuggestion = (input: string): string | null => {
+  const cmds = Object.keys(COMMAND_REGISTRY);
+  let bestMatch = null;
+  let minDistance = 3;
 
-  if (!trimmed) {
-    return { command: '', args: [] };
-  }
-
-  // Split by spaces but respect quoted strings
-  const parts: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < trimmed.length; i++) {
-    const char = trimmed[i];
-
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ' ' && !inQuotes) {
-      if (current) {
-        parts.push(current);
-        current = '';
-      }
-    } else {
-      current += char;
+  cmds.forEach(cmd => {
+    const distance = Math.abs(cmd.length - input.length);
+    if (cmd.startsWith(input.substring(0, 2)) && distance < minDistance) {
+      bestMatch = cmd;
     }
+  });
+  return bestMatch;
+};
+
+// 3. آپ کا ذہین ہیلپ فنکشن (Template Implementation)
+const handleHelp = (args: string[]): string => {
+  if (args.length > 0 && COMMAND_REGISTRY[args[0]]) {
+    const cmd = COMMAND_REGISTRY[args[0]];
+    return `\nHELP: ${args[0].toUpperCase()}\nUsage       : ${cmd.usage}\nDescription : ${cmd.desc}\n`;
   }
 
-  if (current) {
-    parts.push(current);
-  }
+  let output = "\nAVAILABLE COMMANDS:\n";
+  Object.keys(COMMAND_REGISTRY).forEach(key => {
+    // آپ کا تجویز کردہ فارمیٹ ➜ 
+    output += `➜ ${key.padEnd(12)} : ${COMMAND_REGISTRY[key].desc}\n`;
+  });
+  output += "\nTip: Type 'help [command]' for more info.\n";
+  return output;
+};
 
-  const command = parts[0]?.toLowerCase() || '';
-  const args = parts.slice(1);
-
-  return { command, args };
-}
-
-/**
- * Execute a command by name
- */
-export async function executeCommand(
+// 4. مین ایگزیکیوشن لاجک
+export const executeCommand = async (
   command: string,
   args: string[]
-): Promise<CommandOutput[]> {
-  if (!command) {
-    return [];
+): Promise<CommandOutput[]> => {
+  const cmd = command.toLowerCase();
+
+  // خصوصی ہینڈلنگ برائے 'help'
+  if (cmd === 'help') {
+    return [{ type: 'info', content: handleHelp(args) }];
   }
 
-  const handler = commandRegistry[command];
-
-  if (handler) {
-    try {
-      return await handler(args);
-    } catch (error) {
-      return [
-        {
-          type: 'error',
-          content: `Command execution error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        },
-      ];
-    }
+  // رجسٹری سے کمانڈ چیک کریں
+  if (commands[cmd as keyof typeof commands]) {
+    return await commands[cmd as keyof typeof commands](args);
   }
 
-  return await unknownCommand(command, args);
-}
+  // اگر کمانڈ نہ ملے تو مشورہ دیں
+  const suggestion = getSuggestion(cmd);
+  const errorMsg = suggestion 
+    ? `Command not found. Did you mean: '${suggestion}'?` 
+    : `Unknown command: '${cmd}'. Type 'help' for assistance.`;
 
-/**
- * Register a custom command (for extensibility)
- */
-export function registerCommand(
-  name: string,
-  handler: (args: string[]) => Promise<CommandOutput[]>
-): void {
-  commandRegistry[name.toLowerCase()] = handler;
-}
-
-/**
- * Get all registered commands
- */
-export function getRegisteredCommands(): string[] {
-  return Object.keys(commandRegistry).sort();
-}
+  return [{ type: 'error', content: errorMsg }];
+};
