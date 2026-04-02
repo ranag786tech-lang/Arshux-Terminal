@@ -1,165 +1,190 @@
-# arshux - Terminal Emulator
+Arshux Terminal — Developer Overview
 
-A lightweight, modular CLI terminal emulator built with Next.js and React. Combines retro aesthetics with modern web technology.
+Arshux Terminal is a custom developer-focused terminal UI designed to let programmers test commands and code snippets without switching between tools or environments.
 
-## Features
+Core Features
 
-- **Retro Terminal UI**: Classic black background with neon green/blue/amber text
-- **Command System**: Modular command handlers for easy extension
-- **Command History**: Navigate previous commands using arrow keys (↑/↓)
-- **Auto-focus**: Input field automatically focuses when terminal loads
-- **Persistent Config**: User preferences stored in localStorage
-- **Theme Support**: Switch between green, blue, and amber color schemes
-- **Responsive Design**: Works seamlessly on mobile and desktop
-- **Error Handling**: Proper error messages for invalid commands
-- **Clean Code**: Well-structured, beginner-friendly codebase
+Retro Terminal Interface
+A classic terminal-style UI with a dark background and neon-inspired text themes (green, blue, and amber).
 
-## Default Commands
+Modular Command System
+A fully extensible command architecture that allows easy addition and management of custom commands.
 
-- **help** - Display available commands
-- **about** - Information about arshux
-- **clear** - Clear terminal screen
-- **date** - Show current date and time
-- **login** - Authenticate (demo purposes)
-- **logout** - End session
-- **echo [text]** - Echo text back
-- **theme [name]** - Switch theme (green, blue, amber)
-- **config** - Show current configuration
+Command History Support
+Navigate previously executed commands using keyboard arrows (↑ / ↓).
 
-## Project Structure
+Auto-Focus Input
+Input field automatically focuses on terminal load for seamless interaction.
 
-```
-├── lib/cli/
-│   ├── types.ts           # Core type definitions
-│   ├── config.ts          # Configuration management
-│   ├── commands.ts        # Command implementations
-│   └── parser.ts          # Command parsing and execution
-├── components/
-│   ├── terminal.tsx       # Main terminal component
-│   ├── terminal-history.tsx  # Command history display
-│   └── terminal-input.tsx    # Input field component
-├── hooks/
-│   └── use-terminal.ts    # Terminal state management hook
-└── app/
-    ├── layout.tsx         # Root layout
-    ├── page.tsx           # Main page
-    └── globals.css        # Global styles
-```
+Persistent Configuration
+User preferences are stored locally using localStorage for persistence across sessions.
 
-## Getting Started
+Theme System
+Supports multiple color themes (green, blue, amber) with easy switching.
 
-1. **Install Dependencies**
-   ```bash
-   pnpm install
-   ```
+Responsive Layout
+Optimized for both desktop and mobile devices.
 
-2. **Run Development Server**
-   ```bash
-   pnpm dev
-   ```
+Robust Error Handling
+Provides clear feedback for invalid or failed command executions.
 
-3. **Open in Browser**
-   Navigate to `http://localhost:3000`
+Clean Architecture
+Structured, beginner-friendly codebase designed for scalability and maintainability.
 
-## Adding Custom Commands
+Default Commands
 
-The command system is modular and easy to extend:
+help
+Displays a list of all available commands.
 
-```typescript
-// In lib/cli/parser.ts, add your command to the registry:
+about
+Shows information about Arshux Terminal.
 
-const commandRegistry: Record<string, ...> = {
-  mycommand: async (args) => [
-    { type: 'success', content: 'Command executed!' }
-  ],
-  // ... other commands
-};
-```
+clear
+Clears the terminal screen.
 
-Or use the `registerCommand` function:
+date
+Displays the current date and time.
 
-```typescript
+login
+Simulates user authentication (demo mode).
+
+logout
+Ends the current session.
+
+echo [text]
+Returns the provided text as output.
+
+theme [name]
+Switches the terminal theme (green, blue, amber).
+
+config
+Displays current user configuration.
+
+Project Structure
+
+lib/cli/
+types.ts — Core type definitions
+config.ts — Configuration and persistence handling
+commands.ts — Built-in command implementations
+parser.ts — Command parsing and execution logic
+
+components/
+terminal.tsx — Main terminal interface
+terminal-history.tsx — Command output history display
+terminal-input.tsx — Input handling component
+
+hooks/
+use-terminal.ts — Terminal state and behavior management
+
+app/
+layout.tsx — Root layout configuration
+page.tsx — Main application entry point
+globals.css — Global styling
+
+Getting Started
+
+Install dependencies
+pnpm install
+
+Start development server
+pnpm dev
+
+Open application in browser after server starts
+
+Adding Custom Commands
+
+The system supports easy command extension.
+
+Direct registry addition in parser.ts:
+
+const commandRegistry = { mycommand: async (args) => [ { type: 'success', content: 'Command executed successfully' } ], };
+
+Or using the helper function:
+
 import { registerCommand } from '@/lib/cli/parser';
 
-registerCommand('mycommand', async (args) => [
-  { type: 'success', content: 'My custom output' }
-]);
-```
+registerCommand('mycommand', async (args) => [ { type: 'success', content: 'Custom command output' } ]);
 
-## Configuration
+Configuration System
 
-User preferences are automatically saved to localStorage:
+User preferences are automatically persisted in localStorage.
 
-- **username**: Current user name
-- **isLoggedIn**: Authentication status
-- **theme**: Color theme preference
-- **lastLogin**: Last login timestamp
+Stored fields include:
 
-Reset config with the config management functions in `lib/cli/config.ts`.
+username — Active user identifier
+isLoggedIn — Authentication state
+theme — Selected UI theme
+lastLogin — Timestamp of last session
 
-## Keyboard Shortcuts
+Configuration can be reset via utility functions in lib/cli/config.ts.
 
-- **Enter** - Execute command
-- **Arrow Up** - Previous command in history
-- **Arrow Down** - Next command in history
-- **Ctrl+C** - Cancel input (browser support varies)
+Keyboard Shortcuts
 
-## Customization
+Enter — Execute command
+Arrow Up — Navigate previous commands
+Arrow Down — Navigate next commands
+Ctrl + C — Cancel input (browser-dependent support)
 
-### Change Default Theme
-Edit `Terminal` component initialization in `app/page.tsx`:
-```typescript
-<Terminal initialTheme="blue" />
-```
+Customization Options
 
-### Add New Color Scheme
-1. Add theme colors to `themeColors` in components
-2. Add theme case to color definitions
-3. Update type definitions in `lib/cli/types.ts`
+Default Theme Setup
+Modify initial terminal theme in app/page.tsx:
 
-### Modify Terminal Header
-Edit the header section in `components/terminal.tsx`
+<Terminal initialTheme="blue" />Adding a New Theme
 
-## Browser Support
+1. Define color values in theme configuration
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile browsers (iOS Safari, Chrome Android)
 
-## Performance
+2. Extend theme mapping logic
 
-- Lightweight (~50KB gzipped)
-- No external dependencies for core CLI logic
-- Efficient command parsing and execution
-- Optimized rendering with React hooks
 
-## Future Enhancements
+3. Update type definitions in lib/cli/types.ts
 
-- Command autocomplete
-- Custom command macros
-- File system simulation
-- Network request simulation
-- Script/batch command support
-- Themes configuration UI
-- Command documentation system
 
-## License
 
-MIT
+Terminal Header
+Header UI can be modified in components/terminal.tsx.
 
-## Contributing
+Browser Compatibility
 
-Contributions welcome! Please ensure:
-- Code follows existing patterns
-- Commands are modular and self-contained
-- Documentation is updated
-- Mobile responsiveness is maintained
+Supports modern browsers:
 
-## Support
+Chrome / Edge 90+
+Firefox 88+
+Safari 14+
+Mobile browsers (iOS / Android)
 
-For issues or questions, create an issue in the repository or check the documentation above.
+Performance Characteristics
 
----
+Lightweight bundle (~50KB gzipped)
+No external dependencies for core CLI logic
+Optimized command parsing system
+Efficient React-based rendering using hooks
 
-Built with ❤️ using Next.js, React, and TypeScript
+Planned Enhancements
+
+Command autocomplete system
+Macro-based command execution
+Virtual file system simulation
+Network request emulation layer
+Batch/script command support
+UI-based theme configuration panel
+Integrated command documentation system
+
+License
+
+MIT License
+
+Contributing Guidelines
+
+Ensure contributions follow these principles:
+
+Maintain modular command structure
+Preserve existing code patterns
+Update documentation when required
+Ensure mobile responsiveness
+Keep implementations self-contained
+
+Support
+
+For issues or feature requests, open a repository issue or refer to existing documentation.
