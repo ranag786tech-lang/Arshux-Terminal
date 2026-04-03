@@ -1,16 +1,20 @@
 {
   "short_name": "Arshux",
-  "name": "Arshux Terminal",
+  "name": "Arshux Terminal - Standalone CLI",
+  "description": "A lightweight retro CLI terminal emulator with modern web technology.",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "./index.html",
+  "start_url": "/Arshux-Terminal/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#000000",
-  "theme_color": "#FFD700"
+  "theme_color": "#000000",
+  "scope": "/Arshux-Terminal/"
 }
 
