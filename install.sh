@@ -1,21 +1,28 @@
 #!/bin/bash
-# ====================================================
-# Arshux-Terminal Installer
-# Created by: ranag786tech-lang
-# ====================================================
 
-echo -e "\e[1;32m[+] Installing Arshux-Terminal...\e[0m"
+# Arshux Terminal Installer for Termux/Linux
+clear
+echo -e "\e[1;33m"
+echo "    _                 _                 "
+echo "   / \   _ __ ___| |__  _   ___  __ "
+echo "  / _ \ | '__/ __| '_ \| | | \ \/ / "
+echo " / ___ \| |  \__ \ | | | |_| |>  <  "
+echo "/_/   \_\_|  |___/_| |_|\__,_/_/\_\ "
+echo -e "\e[0m"
+echo -e "\e[1;32m[*] Starting Arshux Installation...\e[0m"
 
-# Update and install python if not present
+# Update and install dependencies
+echo -e "\e[1;34m[*] Updating packages...\e[0m"
 pkg update -y && pkg upgrade -y
-pkg install python -y
+pkg install python git -y
 
-# Download the main script from your repo
-curl -L -o ~/mobile_cli_tool.py https://raw.githubusercontent.com/ranag786tech-lang/Arshux-Terminal/main/mobile_cli_tool.py
+# Clone Repository
+echo -e "\e[1;34m[*] Cloning Arshux from GitHub...\e[0m"
+git clone https://github.com/ranag786tech-lang/Arshux-Terminal.git $HOME/Arshux-Terminal
 
-# Create a shortcut alias
-echo "alias arshux='python3 ~/mobile_cli_tool.py'" >> ~/.bashrc
+# Setup Alias (taake 'arshux' likhne se tool khul jaye)
+echo "alias arshux='python $HOME/Arshux-Terminal/main.py'" >> $HOME/.bashrc
 
-# Finish
-echo -e "\e[1;34m[!] Installation Complete!\e[0m"
-echo -e "\e[1;33m[!] Type 'source ~/.bashrc' then 'arshux' to start the tool.\e[0m"
+echo -e "\e[1;32m[+] Installation Complete!\e[0m"
+echo -e "\e[1;33m[!] Please restart Termux or type 'source ~/.bashrc'\e[0m"
+echo -e "\e[1;36m[!] Type 'arshux' to launch your standalone environment.\e[0m"
