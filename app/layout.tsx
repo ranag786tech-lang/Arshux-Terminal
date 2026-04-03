@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -6,26 +6,37 @@ import './globals.css'
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
+// Browser UI aur Mobile Status Bar ka color set karne ke liye
+export const viewport: Viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
+
 export const metadata: Metadata = {
-  title: 'arshux - Terminal Emulator',
-  description: 'A lightweight retro CLI terminal emulator with command handling, history navigation, and persistent configuration',
+  title: 'Arshux - Standalone Terminal',
+  description: 'The Standalone Linux Environment for Developers. A lightweight retro CLI terminal emulator.',
   generator: 'v0.app',
+  manifest: '/manifest.json', // PWA Manifest link
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Arshux',
+  },
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
+        url: '/icon.png', // Aapka naya Golden Icon
+        type: 'image/png',
       },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/icon.png', // Apple devices ke liye icon
   },
 }
 
@@ -36,7 +47,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <head>
+        {/* PWA Manifest Manual Link */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon.png" />
+      </head>
+      <body className="font-sans antialiased bg-black text-white">
         {children}
         <Analytics />
       </body>
