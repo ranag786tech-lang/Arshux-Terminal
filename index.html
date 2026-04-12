@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>ArshUX Terminal v3</title>
+<style>
+:root{
+  --neon:#00ffe7;--neon2:#bf00ff;--neon3:#ff006e;
+  --amber:#ffb300;--bg:#0a0a0f;--sur:#0f0f1a;--sur2:#13131f;
+  --text:#c8d6e5;--dim:#3a3a5c;--green:#00ff41;
+  --red:#ff4060;--yellow:#ffe04b;--blue:#4fc3f7;
+  --font:'Courier New',Courier,monospace;
+  --fs:13px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);overflow:hidden;font-family:var(--font)}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,231,.012) 2px,rgba(0,255,231,.012) 4px);
+}
+@keyframes flicker{0%,100%{opacity:1}93%{opacity:.82}94%{opacity:1}97%{opacity:.9}98%{opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{text-shadow:0 0 8px var(--neon),0 0 20px var(--neon)}50%{text-shadow:0 0 16px var(--neon),0 0 40px var(--neon)}}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+/* ── Header ── */
+#hdr{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;
+  background:var(--sur);border-bottom:1px solid rgba(0,255,231,.12);
+  flex-shrink:0;min-height:40px;
+}
+#logo{
+  font-size:14px;font-weight:700;letter-spacing:3px;white-space:nowrap;
+  color:var(--neon);text-shadow:0 0 10px var(--neon),0 0 30px rgba(0,255,231,.4);
+  animation:flicker 10s infinite;
+}
+#logo em{color:var(--neon2);font-style:normal}
+#logo sup{font-size:8px;color:var(--amber);letter-spacing:0}
+.dots{display:flex;gap:5px;margin-right:2px}
+.dot{width:9px;height:9px;border-radius:50%}
+.dot.r{background:#ff5f57;box-shadow:0 0 5px #ff5f57}
+.dot.y{background:#febc2e;box-shadow:0 0 5px #febc2e}
+.dot.g{background:#28c840;box-shadow:0 0 5px #28c840}
+/* Tabs */
+#tabs{display:flex;gap:3px;flex:1;overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab{
+  display:flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:5px 5px 0 0;font-size:11px;cursor:pointer;
+  background:var(--sur2);color:var(--dim);
+  border:1px solid rgba(255,255,255,.06);border-bottom:none;
+  white-space:nowrap;transition:.15s;user-select:none;
+}
+.tab.active{background:var(--bg);color:var(--neon);border-color:rgba(0,255,231,.3);
+  text-shadow:0 0 6px var(--neon)}
+.tabx{opacity:.4;font-size:10px;padding:0 2px}
+.tabx:hover{opacity:1;color:var(--red)}
+#newTab{
+  background:transparent;border:1px dashed rgba(255,255,255,.15);
+  color:var(--dim);padding:2px 8px;border-radius:5px;
+  cursor:pointer;font-size:13px;font-family:var(--font);
+  transition:.15s;flex-shrink:0;
+}
+#newTab:hover{color:var(--neon);border-color:var(--neon)}
+.hbtn{
+  background:transparent;border:1px solid rgba(255,255,255,.1);
+  color:var(--dim);padding:2px 8px;border-radius:4px;
+  font-size:11px;cursor:pointer;font-family:var(--font);transition:.15s;
+  flex-shrink:0;
+}
+.hbtn:hover{color:var(--neon);border-color:var(--neon)}
+#hdrBtns{display:flex;gap:4px;margin-left:auto}
+
+/* ── Terminal ── */
+#terminals{flex:1;position:relative;overflow:hidden}
+.pane{position:absolute;inset:0;display:none;flex-direction:column}
+.pane.active{display:flex;animation:fadeIn .12s ease}
+
+.out{
+  flex:1;overflow-y:auto;padding:10px 14px;
+  font-size:var(--fs);line-height:1.7;color:var(--text);
+  scrollbar-width:thin;scrollbar-color:var(--dim) transparent;
+  overscroll-behavior:contain;
+}
+.out::-webkit-scrollbar{width:4px}
+.out::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
+
+.ln{animation:fadeIn .08s ease;word-break:break-word;white-space:pre-wrap}
+.ln.cmd{color:var(--neon)}
+.ln.err{color:var(--red)}
+.ln.warn{color:var(--yellow)}
+.ln.ok{color:var(--green)}
+.ln.sys{color:var(--neon2)}
+.ln.info{color:var(--blue)}
+.ln.dim{color:var(--dim)}
+
+/* ── Input ── */
+#inputWrap{
+  display:flex;align-items:center;gap:6px;padding:7px 10px;
+  background:var(--sur);border-top:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
+#promptLabel{font-size:var(--fs);flex-shrink:0;white-space:nowrap}
+#promptDir{color:var(--neon2)}
+#promptSym{color:var(--amber)}
+#cmdIn{
+  flex:1;background:transparent;border:none;outline:none;
+  color:#fff;font-family:var(--font);font-size:var(--fs);
+  caret-color:var(--neon);min-width:0;
+}
+.cursor{
+  width:8px;height:15px;background:var(--neon);
+  flex-shrink:0;animation:blink 1s step-end infinite;
+  box-shadow:0 0 6px var(--neon);border-radius:1px;
+}
+
+/* ── Key Bar ── */
+#keybar{
+  display:flex;gap:3px;padding:4px 8px;
+  background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.04);
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+}
+#keybar::-webkit-scrollbar{display:none}
+.kb{
+  background:var(--sur);border:1px solid rgba(255,255,255,.1);
+  color:var(--dim);padding:3px 9px;border-radius:4px;
+  font-size:11px;cursor:pointer;white-space:nowrap;
+  font-family:var(--font);transition:.12s;flex-shrink:0;
+  user-select:none;-webkit-user-select:none;
+}
+.kb:hover,.kb:active{color:var(--neon);border-color:rgba(0,255,231,.4);
+  background:rgba(0,255,231,.06)}
+.kb.danger{color:rgba(255,0,110,.7)}
+.kb.danger:hover{color:var(--neon3);border-color:var(--neon3)}
+
+/* ── Status ── */
+#status{
+  display:flex;gap:12px;align-items:center;padding:2px 12px;
+  background:#060609;border-top:1px solid rgba(255,255,255,.03);
+  font-size:10px;color:var(--dim);flex-shrink:0;overflow:hidden;
+}
+#status b{color:var(--neon);font-weight:400}
+#stVFS{margin-left:auto;color:rgba(0,255,231,.35)}
+
+/* ── Editor ── */
+#edModal{
+  display:none;position:fixed;inset:0;z-index:500;
+  flex-direction:column;background:var(--bg);
+  border:1px solid rgba(191,0,255,.4);
+  box-shadow:0 0 40px rgba(191,0,255,.2);
+}
+#edModal.open{display:flex}
+#edHdr{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;
+  background:var(--sur);border-bottom:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;
+}
+#edTitle{color:var(--neon2);font-size:12px;flex:1;font-family:var(--font)}
+#edKeys{font-size:10px;color:var(--dim)}
+#edArea{
+  flex:1;background:var(--bg);color:var(--text);border:none;
+  outline:none;padding:12px 16px;font-family:var(--font);
+  font-size:var(--fs);resize:none;line-height:1.65;
+}
+.ebtn{
+  background:transparent;border:1px solid rgba(255,255,255,.15);
+  color:var(--text);padding:3px 10px;border-radius:4px;
+  cursor:pointer;font-size:11px;font-family:var(--font);transition:.12s;
+}
+.ebtn:hover{color:var(--neon);border-color:var(--neon)}
+.ebtn.save{color:var(--green);border-color:rgba(0,255,65,.3)}
+.ebtn.save:hover{border-color:var(--green)}
+
+/* ── Autocomplete ── */
+#ac{
+  display:none;position:fixed;
+  background:var(--sur2);border:1px solid rgba(0,255,231,.3);
+  border-radius:6px;font-family:var(--font);font-size:12px;
+  z-index:200;max-height:160px;overflow-y:auto;
+  box-shadow:0 0 20px rgba(0,255,231,.15);min-width:160px;
+}
+.ac-i{padding:5px 12px;color:var(--text);cursor:pointer;display:flex;gap:8px}
+.ac-i:hover,.ac-i.sel{background:rgba(0,255,231,.08);color:var(--neon)}
+.ac-type{color:var(--dim);font-size:10px}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  :root{--fs:12px}
+  #logo{font-size:12px;letter-spacing:1px}
+  #hdrBtns .hbtn:not(:last-child){display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="hdr">
+    <div class="dots">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+    </div>
+    <div id="logo">Arsh<em>UX</em><sup>v3</sup></div>
+    <div id="tabs"></div>
+    <button id="newTab" title="New Tab (Ctrl+T)">＋</button>
+    <div id="hdrBtns">
+      <button class="hbtn" onclick="UI.toggleTheme()" title="Theme">◑</button>
+      <button class="hbtn" onclick="UI.showHelp()" title="Help">?</button>
+      <button class="hbtn" onclick="UI.clearActive()" title="Clear">⌫</button>
+    </div>
+  </div>
+
+  <div id="terminals"></div>
+
+  <div id="keybar">
+    <button class="kb danger" onclick="Shell.sendCtrl(3)">Ctrl+C</button>
+    <button class="kb danger" onclick="Shell.sendCtrl(4)">Ctrl+D</button>
+    <button class="kb danger" onclick="Shell.sendCtrl(26)">Ctrl+Z</button>
+    <button class="kb" onclick="UI.clearActive()">Ctrl+L</button>
+    <button class="kb" onclick="AC.triggerTab()">Tab↹</button>
+    <button class="kb" onclick="Shell.navHistory(-1)">↑</button>
+    <button class="kb" onclick="Shell.navHistory(1)">↓</button>
+    <button class="kb" onclick="Input.insert('|')">|</button>
+    <button class="kb" onclick="Input.insert(' > ')"> &gt; </button>
+    <button class="kb" onclick="Input.insert(' >> ')"> &gt;&gt; </button>
+    <button class="kb" onclick="Input.insert(' && ')">&amp;&amp;</button>
+    <button class="kb" onclick="Input.insert('; ')">;</button>
+    <button class="kb" onclick="Input.insert('/')"> / </button>
+    <button class="kb" onclick="Input.insert(' -')"> -</button>
+    <button class="kb" onclick="Input.insert(' --')">--</button>
+    <button class="kb" onclick="Input.insert('~')">~</button>
+    <button class="kb" onclick="Input.insert('\"')"> &quot; </button>
+    <button class="kb" onclick="Input.insert(\"'\")"> &apos; </button>
+    <button class="kb" onclick="Input.insert(' &amp; ')"> &amp; </button>
+  </div>
+
+  <div id="inputWrap">
+    <div id="promptLabel">
+      <span id="promptDir">~</span><span id="promptSym"> ❯ </span>
+    </div>
+    <input id="cmdIn" type="text" autocomplete="off" spellcheck="false"
+           autocorrect="off" autocapitalize="none" placeholder=""/>
+    <div class="cursor"></div>
+    <button class="hbtn" onclick="Input.paste()" title="Paste">📋</button>
+  </div>
+
+  <div id="status">
+    <span>ArshUX<b>v3</b></span>
+    <span>dir:<b id="stDir">~</b></span>
+    <span>cmds:<b id="stCmds">0</b></span>
+    <span id="stClock"></span>
+    <span id="stVFS"></span>
+  </div>
+</div>
+
+<!-- Editor -->
+<div id="edModal">
+  <div id="edHdr">
+    <span id="edTitle">nano</span>
+    <span id="edKeys">[Ctrl+S: Save] [Esc: Close]</span>
+    <button class="ebtn save" onclick="Editor.save()">💾 Save</button>
+    <button class="ebtn" onclick="Editor.close()">✕</button>
+  </div>
+  <textarea id="edArea" spellcheck="false"></textarea>
+</div>
+
+<!-- Autocomplete -->
+<div id="ac"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════
+//  ArshUX Terminal v3 — Modular Architecture
+// ═══════════════════════════════════════════
+
+// ── Safe Math Parser (no eval) ──────────────
+const SafeMath = (() => {
+  function tokenize(expr) {
+    const re = /\s*(\d+\.?\d*|\+|\-|\*{1,2}|\/|%|\(|\))\s*/g;
+    const toks = []; let m;
+    while ((m = re.exec(expr)) !== null) toks.push(m[1]);
+    return toks;
+  }
+  function parse(toks, pos = {i:0}) {
+    let left = term(toks, pos);
+    while (pos.i < toks.length && (toks[pos.i] === '+' || toks[pos.i] === '-')) {
+      const op = toks[pos.i++];
+      const right = term(toks, pos);
+      left = op === '+' ? left + right : left - right;
+    }
+    return left;
+  }
+  function term(toks, pos) {
+    let left = expo(toks, pos);
+    while (pos.i < toks.length && (toks[pos.i] === '*' || toks[pos.i] === '/' || toks[pos.i] === '%')) {
+      const op = toks[pos.i++];
+      const right = expo(toks, pos);
+      left = op === '*' ? left * right : op === '/' ? left / right : left % right;
+    }
+    return left;
+  }
+  function expo(toks, pos) {
+    let base = unary(toks, pos);
+    if (pos.i < toks.length && toks[pos.i] === '**') { pos.i++; base = Math.pow(base, expo(toks, pos)); }
+    return base;
+  }
+  function unary(toks, pos) {
+    if (toks[pos.i] === '-') { pos.i++; return -unary(toks, pos); }
+    if (toks[pos.i] === '+') { pos.i++; return +unary(toks, pos); }
+    return atom(toks, pos);
+  }
+  function atom(toks, pos) {
+    if (toks[pos.i] === '(') {
+      pos.i++;
+      const v = parse(toks, pos);
+      if (toks[pos.i] === ')') pos.i++;
+      return v;
+    }
+    const n = parseFloat(toks[pos.i]);
+    if (isNaN(n)) throw new Error('unexpected token: ' + toks[pos.i]);
+    pos.i++;
+    return n;
+  }
+  return { eval(expr) { return parse(tokenize(expr)); } };
+})();
+
+// ── IndexedDB Persistent VFS ─────────────────
+const DB = (() => {
+  let db;
+  const DB_NAME = 'arshux_v3', STORE = 'vfs';
+  function open() {
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(DB_NAME, 2);
+      req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+      req.onsuccess = e => { db = e.target.result; res(db); };
+      req.onerror = () => rej(req.error);
+    });
+  }
+  function tx(mode) { return db.transaction(STORE, mode).objectStore(STORE); }
+  return {
+    async get(key) { return new Promise(r => { const q = tx('readonly').get(key); q.onsuccess = () => r(q.result); q.onerror = () => r(null); }); },
+    async set(key, val) { return new Promise(r => { const q = tx('readwrite').put(val, key); q.onsuccess = () => r(true); q.onerror = () => r(false); }); },
+    async del(key) { return new Promise(r => { const q = tx('readwrite').delete(key); q.onsuccess = () => r(true); q.onerror = () => r(false); }); },
+    async keys() { return new Promise(r => { const q = tx('readonly').getAllKeys(); q.onsuccess = () => r(q.result || []); q.onerror = () => r([]); }); },
+    open
+  };
+})();
+
+// ── VFS ──────────────────────────────────────
+const VFS = (() => {
+  // Default structure — loaded once if DB is empty
+  const DEFAULTS = {
+    '/':                   {t:'d', c:['home','etc','tmp','usr','bin','var']},
+    '/home':               {t:'d', c:['arsh']},
+    '/home/arsh':          {t:'d', c:['readme.txt','projects','notes.txt','.bashrc']},
+    '/home/arsh/readme.txt':{t:'f', content:'Welcome to ArshUX v3!\n\nPersistent filesystem — your files survive refresh!\n\nType "help" for all commands.'},
+    '/home/arsh/notes.txt':{t:'f', content:'My notes:\n- Learn Rust\n- Build ArshUX v4\n- Deploy on cloud'},
+    '/home/arsh/.bashrc':  {t:'f', content:'# ArshUX bash\nalias ll="ls -la"\nalias cls="clear"\nexport EDITOR=nano'},
+    '/home/arsh/projects': {t:'d', c:['arshux']},
+    '/home/arsh/projects/arshux':{t:'d', c:['main.js','package.json']},
+    '/home/arsh/projects/arshux/main.js':{t:'f', content:'// ArshUX v3\nconsole.log("Hello from ArshUX!");'},
+    '/home/arsh/projects/arshux/package.json':{t:'f', content:'{\n  "name": "arshux",\n  "version": "3.0.0"\n}'},
+    '/etc':                {t:'d', c:['hosts','hostname','os-release','passwd']},
+    '/etc/hosts':          {t:'f', content:'127.0.0.1 localhost\n127.0.0.1 arshux.local'},
+    '/etc/hostname':       {t:'f', content:'arshux-machine'},
+    '/etc/os-release':     {t:'f', content:'NAME="ArshUX Linux"\nVERSION="3.0"\nID=arshux'},
+    '/etc/passwd':         {t:'f', content:'root:x:0:0:root:/root:/bin/bash\narsh:x:1000:1000:/home/arsh:/bin/bash'},
+    '/tmp':                {t:'d', c:[]},
+    '/usr':                {t:'d', c:['bin','local']},
+    '/usr/bin':            {t:'d', c:['python3','node','git','curl']},
+    '/usr/local':          {t:'d', c:['bin']},
+    '/usr/local/bin':      {t:'d', c:[]},
+    '/bin':                {t:'d', c:['sh','bash']},
+    '/var':                {t:'d', c:['log']},
+    '/var/log':            {t:'d', c:['syslog']},
+    '/var/log/syslog':     {t:'f', content:'[boot] ArshUX 3.0 kernel loaded\n[boot] Persistent VFS: OK\n[boot] IndexedDB: mounted'},
+  };
+
+  const cache = {};    // in-memory write-through cache
+  let dirty = new Set();
+  let saveTimer = null;
+
+  function schedSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushDirty, 800);
+    updateVFSStatus();
+  }
+
+  async function flushDirty() {
+    for (const k of dirty) await DB.set(k, cache[k]);
+    dirty.clear();
+    updateVFSStatus();
+  }
+
+  function updateVFSStatus() {
+    const el = document.getElementById('stVFS');
+    if (el) el.textContent = dirty.size ? `💾 saving…` : `✓ saved`;
+  }
+
+  return {
+    async init() {
+      await DB.open();
+      const keys = await DB.keys();
+      if (!keys.length) {
+        // First run — seed defaults
+        for (const [k, v] of Object.entries(DEFAULTS)) {
+          cache[k] = JSON.parse(JSON.stringify(v));
+          await DB.set(k, cache[k]);
+        }
+      } else {
+        // Load from DB
+        for (const k of keys) cache[k] = await DB.get(k);
+      }
+    },
+
+    get(path) { return cache[path] || null; },
+
+    set(path, node) {
+      cache[path] = node;
+      dirty.add(path);
+      schedSave();
+    },
+
+    del(path) {
+      const prefix = path + '/';
+      for (const k of Object.keys(cache)) {
+        if (k === path || k.startsWith(prefix)) {
+          delete cache[k];
+          dirty.add(k);
+          DB.del(k);
+        }
+      }
+      dirty.delete(path);
+      schedSave();
+    },
+
+    keys() { return Object.keys(cache); },
+
+    resolve(cwd, p) {
+      if (!p || p === '~') return '/home/arsh';
+      if (p.startsWith('~/')) return '/home/arsh/' + p.slice(2);
+      if (p.startsWith('/')) return norm(p);
+      return norm(cwd + '/' + p);
+    },
+
+    norm,
+
+    ls(path) {
+      const node = cache[path];
+      if (!node || node.t !== 'd') return null;
+      return [...(node.c || [])];
+    },
+
+    mkfile(path, content = '') {
+      const par = norm(path + '/..'), name = basename(path);
+      if (!cache[par] || cache[par].t !== 'd') return false;
+      if (!cache[par].c.includes(name)) {
+        const parNode = { ...cache[par], c: [...cache[par].c, name] };
+        cache[par] = parNode; dirty.add(par);
+      }
+      cache[path] = { t:'f', content }; dirty.add(path);
+      schedSave(); return true;
+    },
+
+    mkdir(path) {
+      const par = norm(path + '/..'), name = basename(path);
+      if (!cache[par] || cache[par].t !== 'd') return false;
+      if (cache[path]) return false;
+      if (!cache[par].c.includes(name)) {
+        cache[par] = { ...cache[par], c: [...cache[par].c, name] };
+        dirty.add(par);
+      }
+      cache[path] = { t:'d', c:[] }; dirty.add(path);
+      schedSave(); return true;
+    },
+
+    rmdir(path) {
+      const par = norm(path + '/..'), name = basename(path);
+      if (cache[par]) {
+        cache[par] = { ...cache[par], c: cache[par].c.filter(x => x !== name) };
+        dirty.add(par);
+      }
+      this.del(path);
+    },
+  };
+
+  function norm(p) {
+    const parts = p.split('/').filter(Boolean);
+    const r = [];
+    for (const part of parts) { if (part === '..') r.pop(); else if (part !== '.') r.push(part); }
+    return '/' + r.join('/');
+  }
+  function basename(p) { return p.split('/').filter(Boolean).pop() || ''; }
+})();
+
+function basename(p) { return p.split('/').filter(Boolean).pop() || '/'; }
+function toRel(abs) {
+  if (abs === '/home/arsh') return '~';
+  if (abs.startsWith('/home/arsh/')) return '~/' + abs.slice('/home/arsh/'.length);
+  return abs;
+}
+
+// ── Tab / Session Manager ─────────────────────
+const Tabs = (() => {
+  let tabs = [], active = null, counter = 0;
+
+  function mk(name) {
+    const id = 'T' + (++counter);
+    const t = {
+      id, name: name || `bash ${counter}`,
+      cwd: '/home/arsh',
+      history: [], histIdx: -1,
+      cmds: 0,
+      env: { USER:'arsh', HOME:'/home/arsh', TERM:'arshux', SHELL:'/bin/bash', HOSTNAME:'arshux-machine', PATH:'/usr/local/bin:/usr/bin:/bin' },
+      aliases: { ll:'ls -la', cls:'clear', la:'ls -a', q:'exit' },
+      dirStack: [],
+    };
+    tabs.push(t);
+
+    // Pane
+    const pane = document.createElement('div');
+    pane.className = 'pane';
+    pane.id = 'P' + id;
+    pane.innerHTML = `<div class="out" id="O${id}"></div>`;
+    document.getElementById('terminals').appendChild(pane);
+
+    // Tab btn
+    const tabsEl = document.getElementById('tabs');
+    const btn = document.createElement('div');
+    btn.className = 'tab';
+    btn.id = 'B' + id;
+    btn.innerHTML = `<span onclick="Tabs.sw('${id}')">${t.name}</span><span class="tabx" onclick="Tabs.close('${id}')">✕</span>`;
+    tabsEl.appendChild(btn);
+
+    sw(id);
+    if (counter === 1) UI.boot(t);
+    else { Printer.ln(t, `[Session: ${t.name}]`, 'sys'); Printer.ln(t, 'Type "help" for commands.', 'info'); }
+    Input.focus();
+    return t;
+  }
+
+  function sw(id) {
+    tabs.forEach(t => {
+      document.getElementById('P'+t.id)?.classList.remove('active');
+      document.getElementById('B'+t.id)?.classList.remove('active');
+    });
+    active = tabs.find(t => t.id === id) || tabs[0];
+    document.getElementById('P'+active.id)?.classList.add('active');
+    document.getElementById('B'+active.id)?.classList.add('active');
+    updateStatus();
+    Input.focus();
+  }
+
+  function close(id) {
+    if (tabs.length === 1) { Printer.ln(active, 'Cannot close last tab.', 'err'); return; }
+    const idx = tabs.findIndex(t => t.id === id);
+    document.getElementById('P'+id)?.remove();
+    document.getElementById('B'+id)?.remove();
+    tabs = tabs.filter(t => t.id !== id);
+    sw(tabs[Math.max(0, idx-1)].id);
+  }
+
+  function updateStatus() {
+    if (!active) return;
+    const rel = toRel(active.cwd);
+    document.getElementById('promptDir').textContent = rel;
+    document.getElementById('stDir').textContent = rel;
+    document.getElementById('stCmds').textContent = active.cmds;
+  }
+
+  return { mk, sw, close, get active() { return active; }, updateStatus };
+})();
+
+// ── Printer ──────────────────────────────────
+const Printer = {
+  ln(tab, text, cls = '') {
+    const out = document.getElementById('O' + tab.id);
+    if (!out) return;
+    const lines = String(text).split('\n');
+    lines.forEach(line => {
+      const d = document.createElement('div');
+      d.className = 'ln' + (cls ? ' ' + cls : '');
+      d.textContent = line;
+      out.appendChild(d);
+    });
+    out.scrollTop = out.scrollHeight;
+  },
+  clear(tab) {
+    const o = document.getElementById('O'+tab.id);
+    if (o) o.innerHTML = '';
+  },
+  cmd(tab, line) {
+    this.ln(tab, `${toRel(tab.cwd)} ❯ ${line}`, 'cmd');
+  }
+};
+
+// ── Command Parser ────────────────────────────
+function parseTokens(raw) {
+  const args = []; let cur = '', inQ = false, qc = '';
+  for (const c of raw) {
+    if (inQ) { if (c === qc) inQ = false; else cur += c; }
+    else if (c === '"' || c === "'") { inQ = true; qc = c; }
+    else if (c === ' ' || c === '\t') { if (cur) { args.push(cur); cur = ''; } }
+    else cur += c;
+  }
+  if (cur) args.push(cur);
+  return args;
+}
+
+function expandVars(str, tab) {
+  return str.replace(/\$\{?([A-Z_][A-Z0-9_]*)\}?/gi, (_, k) => tab.env[k] ?? '');
+}
+
+// ── Shell Engine ──────────────────────────────
+const Shell = {
+  run(tab, raw) {
+    raw = raw.trim();
+    if (!raw) return;
+
+    // Expand aliases
+    const fw = raw.split(' ')[0];
+    if (tab.aliases[fw]) raw = tab.aliases[fw] + raw.slice(fw.length);
+
+    // Record history
+    if (tab.history[0] !== raw) tab.history.unshift(raw);
+    tab.histIdx = -1;
+    tab.cmds++;
+    Tabs.updateStatus();
+    Printer.cmd(tab, raw);
+
+    // Chain operators
+    if (/\s&&\s/.test(raw)) {
+      for (const part of raw.split(/\s&&\s/)) { if (!this.execLine(tab, part.trim())) break; }
+      return;
+    }
+    if (/;\s*/.test(raw)) {
+      raw.split(/;\s*/).filter(Boolean).forEach(p => this.execLine(tab, p.trim()));
+      return;
+    }
+    this.execLine(tab, raw);
+  },
+
+  execLine(tab, line) {
+    // Pipe chain
+    if (/\s\|\s/.test(line)) {
+      const parts = line.split(/\s\|\s/);
+      let pipeIn = null;
+      for (const p of parts) { pipeIn = this.execSingle(tab, p.trim(), pipeIn); }
+      return pipeIn !== null;
+    }
+    // Redirect >>
+    const app = line.match(/^(.+?)\s>>\s(.+)$/);
+    if (app) {
+      const out = this.execSingle(tab, app[1].trim(), null);
+      const fp = VFS.resolve(tab.cwd, app[2].trim());
+      const ex = VFS.get(fp);
+      VFS.mkfile(fp, (ex?.content || '') + (out || ''));
+      return true;
+    }
+    // Redirect >
+    const red = line.match(/^(.+?)\s>\s(.+)$/);
+    if (red) {
+      const out = this.execSingle(tab, red[1].trim(), null);
+      const fp = VFS.resolve(tab.cwd, red[2].trim());
+      VFS.mkfile(fp, out || '');
+      return true;
+    }
+    return this.execSingle(tab, line, null) !== null;
+  },
+
+  execSingle(tab, line, pipeIn) {
+    const [cmd, ...rawArgs] = parseTokens(line);
+    if (!cmd) return '';
+    const args = rawArgs.map(a => expandVars(a, tab));
+    return Cmds.exec(tab, cmd, args, pipeIn);
+  },
+
+  sendCtrl(code) {
+    const tab = Tabs.active;
+    if (!tab) return;
+    if (code === 3) { Printer.ln(tab, '^C', 'err'); document.getElementById('cmdIn').value = ''; }
+    else if (code === 4) Printer.ln(tab, 'logout', 'info');
+    else if (code === 26) Printer.ln(tab, '[1]+ Stopped', 'warn');
+    Input.focus();
+  },
+
+  navHistory(dir) {
+    const tab = Tabs.active; if (!tab) return;
+    const el = document.getElementById('cmdIn');
+    tab.histIdx = Math.max(-1, Math.min(tab.history.length - 1, tab.histIdx + dir));
+    el.value = tab.histIdx >= 0 ? tab.history[tab.histIdx] : '';
+    el.setSelectionRange(el.value.length, el.value.length);
+  }
+};
+
+// ── Commands ──────────────────────────────────
+const Cmds = (() => {
+  // Helper
+  function out(tab, text, cls) { Printer.ln(tab, text, cls); return String(text); }
+
+  const map = {
+    // ── Navigation ──
+    cd(tab, args) {
+      const target = VFS.resolve(tab.cwd, args[0] || tab.env.HOME);
+      const node = VFS.get(target);
+      if (!node || node.t !== 'd') { out(tab, `cd: ${args[0]||'~'}: No such directory`, 'err'); return null; }
+      tab.cwd = target; Tabs.updateStatus(); return '';
+    },
+    pwd(tab) { return out(tab, tab.cwd); },
+    pushd(tab, args) {
+      const t = VFS.resolve(tab.cwd, args[0] || '~');
+      if (!VFS.get(t) || VFS.get(t).t !== 'd') { out(tab, `pushd: not a directory`, 'err'); return null; }
+      tab.dirStack.push(tab.cwd); tab.cwd = t; Tabs.updateStatus(); return out(tab, tab.cwd);
+    },
+    popd(tab) {
+      if (!tab.dirStack.length) { out(tab, 'popd: stack empty', 'err'); return null; }
+      tab.cwd = tab.dirStack.pop(); Tabs.updateStatus(); return out(tab, tab.cwd);
+    },
+
+    // ── Files ──
+    ls(tab, args, pipe) {
+      const flags = args.filter(a=>a.startsWith('-')).join('');
+      const paths = args.filter(a=>!a.startsWith('-'));
+      const target = VFS.resolve(tab.cwd, paths[0]||'.');
+      const children = VFS.ls(target);
+      if (children === null) { out(tab, `ls: ${paths[0]||'.'}: Not a directory`, 'err'); return null; }
+      const showHidden = flags.includes('a');
+      const long = flags.includes('l');
+      let items = children.filter(c => showHidden || !c.startsWith('.'));
+      if (!items.length) { return ''; }
+      let result = '';
+      if (long) {
+        out(tab, `total ${items.length}`);
+        items.forEach(name => {
+          const fp = target+'/'+name, node = VFS.get(fp);
+          const isD = node?.t === 'd';
+          const sz = isD ? 4096 : (node?.content?.length||0);
+          const perm = isD?'drwxr-xr-x':'-rw-r--r--';
+          const line = `${perm}  1 arsh arsh ${String(sz).padStart(6)} Jan 01 00:00  ${name}${isD?'/':''}`;
+          out(tab, line); result += line + '\n';
+        });
+      } else {
+        const row = items.map(name => {
+          const fp=target+'/'+name, node=VFS.get(fp);
+          return (node?.t==='d') ? name+'/' : name;
+        }).join('   ');
+        out(tab, row); result = row;
+      }
+      return result;
+    },
+
+    cat(tab, args, pipe) {
+      if (!args[0] && pipe != null) { out(tab, pipe); return pipe; }
+      if (!args[0]) { out(tab, 'cat: missing file operand', 'err'); return null; }
+      const fp = VFS.resolve(tab.cwd, args[0]), node = VFS.get(fp);
+      if (!node) { out(tab, `cat: ${args[0]}: No such file`, 'err'); return null; }
+      if (node.t === 'd') { out(tab, `cat: ${args[0]}: Is a directory`, 'err'); return null; }
+      out(tab, node.content); return node.content;
+    },
+
+    head(tab, args, pipe) {
+      const nI = args.indexOf('-n'), n = nI !== -1 ? parseInt(args[nI+1])||10 : 10;
+      const file = args.filter(a=>!a.startsWith('-'))[0];
+      const text = file ? (VFS.get(VFS.resolve(tab.cwd,file))?.content||'') : (pipe||'');
+      const result = text.split('\n').slice(0,n).join('\n');
+      out(tab, result); return result;
+    },
+
+    tail(tab, args, pipe) {
+      const nI = args.indexOf('-n'), n = nI !== -1 ? parseInt(args[nI+1])||10 : 10;
+      const file = args.filter(a=>!a.startsWith('-'))[0];
+      const text = file ? (VFS.get(VFS.resolve(tab.cwd,file))?.content||'') : (pipe||'');
+      const result = text.split('\n').slice(-n).join('\n');
+      out(tab, result); return result;
+    },
+
+    touch(tab, args) {
+      if (!args[0]) { out(tab, 'touch: missing operand', 'err'); return null; }
+      args.forEach(name => { const fp=VFS.resolve(tab.cwd,name); if (!VFS.get(fp)) VFS.mkfile(fp,''); });
+      return '';
+    },
+
+    mkdir(tab, args) {
+      const names = args.filter(a=>!a.startsWith('-'));
+      if (!names[0]) { out(tab, 'mkdir: missing operand', 'err'); return null; }
+      names.forEach(name => {
+        const fp = VFS.resolve(tab.cwd, name);
+        if (VFS.get(fp)) { out(tab, `mkdir: ${name}: exists`, 'err'); return; }
+        if (!VFS.mkdir(fp)) out(tab, `mkdir: ${name}: failed`, 'err');
+      });
+      return '';
+    },
+
+    rm(tab, args) {
+      const recursive = args.some(a=>a.includes('r')||a==='-rf');
+      const targets = args.filter(a=>!a.startsWith('-'));
+      if (!targets[0]) { out(tab, 'rm: missing operand', 'err'); return null; }
+      targets.forEach(name => {
+        const fp = VFS.resolve(tab.cwd, name), node = VFS.get(fp);
+        if (!node) { out(tab, `rm: ${name}: not found`, 'err'); return; }
+        if (node.t === 'd' && !recursive) { out(tab, `rm: ${name}: is a directory`, 'err'); return; }
+        VFS.rmdir(fp);
+      });
+      return '';
+    },
+
+    cp(tab, args) {
+      const [s, d] = args.filter(a=>!a.startsWith('-'));
+      if (!s||!d) { out(tab,'cp: missing operand','err'); return null; }
+      const sp=VFS.resolve(tab.cwd,s), dp=VFS.resolve(tab.cwd,d);
+      const node=VFS.get(sp);
+      if (!node) { out(tab,`cp: ${s}: not found`,'err'); return null; }
+      if (node.t==='d') { out(tab,'cp: use -r for dirs','err'); return null; }
+      VFS.mkfile(dp, node.content); return '';
+    },
+
+    mv(tab, args) {
+      const [s, d] = args.filter(a=>!a.startsWith('-'));
+      if (!s||!d) { out(tab,'mv: missing operand','err'); return null; }
+      const sp=VFS.resolve(tab.cwd,s), dp=VFS.resolve(tab.cwd,d);
+      const node=VFS.get(sp);
+      if (!node) { out(tab,`mv: ${s}: not found`,'err'); return null; }
+      if (node.t==='f') VFS.mkfile(dp, node.content);
+      else { VFS.mkdir(dp); VFS.keys().filter(k=>k.startsWith(sp+'/')).forEach(k=>{ const rel=k.slice(sp.length); const n2=VFS.get(k); if(n2?.t==='f') VFS.mkfile(dp+rel,n2.content); else VFS.mkdir(dp+rel); }); }
+      VFS.rmdir(sp); return '';
+    },
+
+    find(tab, args) {
+      const path = VFS.resolve(tab.cwd, args[0]||'.');
+      const ni = args.indexOf('-name'), pat = ni!==-1 ? args[ni+1] : null;
+      const res = [];
+      function walk(p) {
+        const node = VFS.get(p); if (!node) return;
+        const name = basename(p);
+        if (!pat || name.includes(pat.replace(/\*/g,''))) res.push(p);
+        if (node.t==='d') (node.c||[]).forEach(c=>walk(p+'/'+c));
+      }
+      walk(path);
+      res.forEach(r=>out(tab,r));
+      return res.join('\n');
+    },
+
+    tree(tab, args) {
+      const path = VFS.resolve(tab.cwd, args[0]||'.');
+      out(tab, basename(path)||'/');
+      function walk(p, pre='') {
+        const node=VFS.get(p); if (!node||node.t!=='d') return;
+        const ch=node.c||[];
+        ch.forEach((name,i) => {
+          const fp=p+'/'+name, last=i===ch.length-1;
+          const br=last?'└── ':'├── ';
+          const n2=VFS.get(fp);
+          out(tab, pre+br+name+(n2?.t==='d'?'/':''));
+          if (n2?.t==='d') walk(fp, pre+(last?'    ':'│   '));
+        });
+      }
+      walk(path); return '';
+    },
+
+    wc(tab, args, pipe) {
+      const file=args.filter(a=>!a.startsWith('-'))[0];
+      const text=file?(VFS.get(VFS.resolve(tab.cwd,file))?.content||''):(pipe||'');
+      const lines=text.split('\n').length, words=text.split(/\s+/).filter(Boolean).length, bytes=text.length;
+      const r=`${lines}\t${words}\t${bytes}${file?' '+file:''}`;
+      out(tab,r); return r;
+    },
+
+    diff(tab, args) {
+      const [f1,f2]=args;
+      if (!f1||!f2){out(tab,'diff: need two files','err');return null;}
+      const n1=VFS.get(VFS.resolve(tab.cwd,f1))?.content||'';
+      const n2=VFS.get(VFS.resolve(tab.cwd,f2))?.content||'';
+      if (n1===n2){out(tab,'Files are identical');return '';}
+      out(tab,`--- ${f1}\n+++ ${f2}`);
+      n1.split('\n').forEach((l,i)=>{const l2=n2.split('\n')[i];if(l!==l2){out(tab,`-${l}`,'err');if(l2!==undefined)out(tab,`+${l2}`,'ok');}});
+      return '';
+    },
+
+    // ── Text ──
+    echo(tab, args) {
+      const n=args[0]==='-n'; const text=(n?args.slice(1):args).join(' ');
+      out(tab,text); return text;
+    },
+    printf(tab, args) {
+      const text=args.join(' ').replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+      out(tab,text); return text;
+    },
+    grep(tab, args, pipe) {
+      const flags=args.filter(a=>a.startsWith('-')).join('');
+      const nonF=args.filter(a=>!a.startsWith('-'));
+      const [pat,file]=nonF;
+      if (!pat){out(tab,'grep: missing pattern','err');return null;}
+      const ci=flags.includes('i'), inv=flags.includes('v');
+      const text=file?(VFS.get(VFS.resolve(tab.cwd,file))?.content||''):(pipe||'');
+      const re=new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),ci?'i':'');
+      const lines=text.split('\n').filter(l=>inv?!re.test(l):re.test(l));
+      lines.forEach(l=>out(tab,l)); return lines.join('\n');
+    },
+    sed(tab, args, pipe) {
+      const expr=args[0], file=args[1];
+      if (!expr){out(tab,'sed: missing expression','err');return null;}
+      const m=expr.match(/^s\/(.*?)\/(.*?)\/(g?)$/);
+      if (!m){out(tab,`sed: invalid: ${expr}`,'err');return null;}
+      const [,pat,rep,flag]=m;
+      const text=file?(VFS.get(VFS.resolve(tab.cwd,file))?.content||''):(pipe||'');
+      const result=text.replace(new RegExp(pat.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),flag),'',rep);
+      out(tab,result); return result;
+    },
+    sort(tab, args, pipe) {
+      const rev=args.includes('-r'), file=args.filter(a=>!a.startsWith('-'))[0];
+      const text=file?(VFS.get(VFS.resolve(tab.cwd,file))?.content||''):(pipe||'');
+      const sorted=text.split('\n').sort(); if (rev) sorted.reverse();
+      const r=sorted.join('\n'); out(tab,r); return r;
+    },
+    uniq(tab, args, pipe) {
+      const text=pipe||'';
+      const r=text.split('\n').filter((l,i,a)=>l!==a[i-1]).join('\n');
+      out(tab,r); return r;
+    },
+    cut(tab, args, pipe) {
+      const di=args.indexOf('-d'), fi=args.indexOf('-f');
+      const delim=di!==-1?args[di+1]:'\t', field=fi!==-1?parseInt(args[fi+1])-1:0;
+      const text=pipe||'';
+      const r=text.split('\n').map(l=>l.split(delim)[field]||'').join('\n');
+      out(tab,r); return r;
+    },
+    tr(tab, args, pipe) {
+      const [from,to]=args; let text=pipe||'';
+      if (from&&to) { for(let i=0;i<from.length;i++) text=text.split(from[i]).join(to[i]||''); }
+      out(tab,text); return text;
+    },
+    tee(tab, args, pipe) {
+      const file=args[0]; out(tab,pipe||'');
+      if (file) VFS.mkfile(VFS.resolve(tab.cwd,file), pipe||'');
+      return pipe||'';
+    },
+    xargs(tab, args, pipe) {
+      const cmd=args.join(' '), inp=(pipe||'').split(/\s+/).filter(Boolean);
+      let r='';
+      inp.forEach(a=>{ r+=Shell.execSingle(tab,`${cmd} ${a}`,null)||''; });
+      return r;
+    },
+    base64(tab, args, pipe) {
+      const dec=args.includes('-d'), inp=pipe||(args.filter(a=>!a.startsWith('-'))[0]||'');
+      try { const r=dec?atob(inp.trim()):btoa(inp); out(tab,r); return r; }
+      catch { out(tab,'base64: invalid input','err'); return null; }
+    },
+    md5sum(tab, args, pipe) {
+      const file=args[0];
+      const text=file?(VFS.get(VFS.resolve(tab.cwd,file))?.content||''):(pipe||'');
+      let h=5381; for(const c of text) h=((h<<5)+h)^c.charCodeAt(0);
+      const hash=(h>>>0).toString(16).padStart(8,'0').repeat(4);
+      out(tab,`${hash}  ${file||'-'}`); return hash;
+    },
+
+    // ── System ──
+    whoami(tab){return out(tab,tab.env.USER);},
+    hostname(tab){return out(tab,tab.env.HOSTNAME);},
+    id(tab){return out(tab,`uid=1000(${tab.env.USER}) gid=1000(${tab.env.USER}) groups=1000,27,sudo`);},
+    uname(tab,args){return out(tab,args.includes('-a')?'ArshUX-Linux 5.15.0 #3 SMP x86_64 GNU/Linux':'ArshUX-Linux');},
+    uptime(tab){return out(tab,`up 3 days, 7:42, 1 user, load: 0.12 0.08 0.05`);},
+    date(tab,args){return out(tab,new Date().toString());},
+    cal(tab){const d=new Date();out(tab,`   ${d.toLocaleString('default',{month:'long'})} ${d.getFullYear()}`);out(tab,'Su Mo Tu We Th Fr Sa');return '';},
+    df(tab,args){const h=args.includes('-h');out(tab,'Filesystem     Size  Used Avail Use% Mounted on');out(tab,`/dev/vfs       ${h?'16G':'17179869184'}  2.1G  13.9G  13% /`);return '';},
+    du(tab,args){out(tab,`4.0K\t${VFS.resolve(tab.cwd,args[0]||'.')}`);return '';},
+    free(tab,args){const h=args.includes('-h');out(tab,'              total     used     free');out(tab,`Mem:       ${h?'3.8G':'3971072'} ${h?'1.2G':'1200000'} ${h?'2.6G':'2771072'}`);return '';},
+    ps(tab){out(tab,'  PID TTY      TIME CMD');out(tab,'    1 ?        00:00:01 bash');out(tab,`  ${Math.floor(Math.random()*800)+100} pts/0    00:00:00 arshux`);return '';},
+    top(tab){out(tab,'Tasks: 42 total, 1 running, 41 sleeping');out(tab,'%Cpu(s):  2.3 us,  0.8 sy, 96.9 id');out(tab,'MiB Mem:  3842 total, 2612 free');out(tab,'');out(tab,'  PID USER    %CPU %MEM COMMAND');out(tab,'    1 arsh     0.0  0.1 bash');out(tab,`  ${Math.floor(Math.random()*800)+200} arsh     1.2  0.3 arshux`);return '';},
+    htop(tab){return map.top(tab,[],null);},
+    kill(tab,args){out(tab,`kill: ${args[0]||'?'}: terminated`);return '';},
+    jobs(tab){out(tab,'no background jobs');return '';},
+    lsof(tab){out(tab,'COMMAND  PID USER FD TYPE NAME');out(tab,'bash       1 arsh  0  CHR /dev/pts/0');return '';},
+    strace(tab,args){out(tab,`strace: tracing ${args.join(' ')} [simulated]`,'warn');return '';},
+    mount(tab){out(tab,'/dev/vfs on / type ext4 (rw)');out(tab,'tmpfs on /tmp type tmpfs (rw)');return '';},
+    chmod(tab,args){out(tab,`chmod ${args.join(' ')}: OK`);return '';},
+    chown(tab,args){out(tab,`chown ${args.join(' ')}: OK`);return '';},
+    sudo(tab,args){out(tab,`[sudo] password for ${tab.env.USER}: `,);out(tab,'arsh is not in sudoers. 😈','err');return null;},
+
+    // ── Network ──
+    ping(tab,args){
+      const host=args[0]||'localhost', c=parseInt(args[args.indexOf('-c')+1])||4;
+      out(tab,`PING ${host}: 56 data bytes`);
+      for(let i=0;i<c;i++) out(tab,`64 bytes from ${host}: icmp_seq=${i} ttl=64 time=${(Math.random()*20+1).toFixed(3)} ms`);
+      out(tab,`--- ${host} ping stats ---`);
+      out(tab,`${c} packets tx, ${c} received, 0% loss`);
+      return '';
+    },
+    curl(tab,args){
+      const url=args.filter(a=>!a.startsWith('-'))[0];
+      if (!url){out(tab,'curl: missing URL','err');return null;}
+      out(tab,`[Simulated] GET ${url}`);
+      out(tab,'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html>OK</html>');
+      return '<html>OK</html>';
+    },
+    wget(tab,args){
+      const url=args.filter(a=>!a.startsWith('-'))[0];
+      if (!url){out(tab,'wget: missing URL','err');return null;}
+      const fname=(url.split('/').pop()||'index.html').split('?')[0];
+      out(tab,`--${new Date().toISOString()}-- ${url}`);
+      out(tab,'200 OK');
+      out(tab,`Saved: '${fname}' [simulated]`);
+      VFS.mkfile(VFS.resolve(tab.cwd,fname),`<!-- downloaded from ${url} -->`);
+      return '';
+    },
+    ifconfig(tab){out(tab,'lo:   inet 127.0.0.1  netmask 255.0.0.0');out(tab,'eth0: inet 192.168.1.42  netmask 255.255.255.0');return '';},
+    ip(tab,args){return map.ifconfig(tab,[],null);},
+    netstat(tab){out(tab,'Active connections:');out(tab,'Proto  Local            State');out(tab,'tcp    0.0.0.0:22       LISTEN');return '';},
+    nslookup(tab,args){const h=args[0]||'localhost';out(tab,`Server: 8.8.8.8\nName:   ${h}\nAddress: 93.184.216.34`);return '';},
+    ssh(tab,args){out(tab,`[SSH] Connecting to ${args[0]||'host'}... [simulated]`,'warn');return '';},
+
+    // ── Package ──
+    pkg(tab,args){
+      const sub=args[0];
+      if (sub==='install'){out(tab,`Fetching...`);out(tab,`Installing ${args[1]||'?'}... ██████████ 100%`,'ok');out(tab,`${args[1]||'?'} installed [simulated]`,'ok');}
+      else if (sub==='remove'){out(tab,`Removing ${args[1]||'?'}... OK`,'ok');}
+      else if (sub==='list'){['bash','coreutils','curl','git','python3','node','vim','nano','wget'].forEach(p=>out(tab,p));}
+      else if (sub==='search'){out(tab,`Results for "${args[1]}": ${args[1]}, lib${args[1]}`);}
+      else out(tab,'pkg: install <pkg> | remove <pkg> | list | search <q>');
+      return '';
+    },
+    apt(tab,args){return map.pkg(tab,args,null);},
+    'apt-get'(tab,args){return map.pkg(tab,args,null);},
+    npm(tab,args){
+      const sub=args[0];
+      if (sub==='init') out(tab,'Created package.json');
+      else if (sub==='install') out(tab,`npm: installing ${args[1]||'deps'}... OK`,'ok');
+      else if (sub==='run') out(tab,`npm: running ${args[1]}...`);
+      else if (sub==='start') out(tab,'npm: starting server...');
+      else out(tab,'npm: use init | install | run | start');
+      return '';
+    },
+    pip(tab,args){return map.pkg(tab,args,null);},
+
+    // ── Dev ──
+    git(tab,args){
+      const sub=args[0];
+      if (sub==='init') out(tab,`Initialized empty repo in ${tab.cwd}/.git/`);
+      else if (sub==='status') out(tab,'On branch main\nnothing to commit, working tree clean');
+      else if (sub==='log') out(tab,'commit a1b2c3d (HEAD -> main)\nAuthor: arsh <arsh@arshux.local>\n\n    Initial commit');
+      else if (sub==='add') out(tab,`staged: ${args[1]||'.'}`);
+      else if (sub==='commit') out(tab,`[main a1b2c3] ${args.filter(a=>a!=='-m').join(' ')}`);
+      else if (sub==='push') out(tab,'To origin/main: OK');
+      else if (sub==='pull') out(tab,'Already up to date.');
+      else if (sub==='clone') out(tab,`Cloning into '${(args[1]||'repo').split('/').pop()}'... done.`);
+      else if (sub==='branch') out(tab,'* main\n  dev\n  feature/arshux-v3');
+      else if (sub==='checkout') out(tab,`Switched to '${args[1]||'main'}'`);
+      else if (sub==='diff') out(tab,'diff --git a/main.js b/main.js\n-old line\n+new line');
+      else out(tab,`git: unknown: ${sub||'?'}. Try: init status add commit push pull log branch`);
+      return '';
+    },
+    python3(tab,args){out(tab,args[0]?`[python3 ${args[0]}: simulated]`:'Python 3.11.0\n[REPL not supported in PWA]'); return '';},
+    node(tab,args){out(tab,args[0]?`[node ${args[0]}: simulated]`:'Node.js v20.0.0\n[REPL not supported in PWA]'); return '';},
+    which(tab,args){
+      const known=['ls','cat','grep','echo','cd','mkdir','rm','cp','mv','git','python3','node','curl','wget','ping','nano','vim'];
+      if (!args[0]){out(tab,'which: missing arg','err');return null;}
+      out(tab,known.includes(args[0])?`/usr/bin/${args[0]}`:`which: ${args[0]}: not found`);
+      return '';
+    },
+    man(tab,args){
+      const cmd=args[0]; if (!cmd){out(tab,'man: what page?','err');return null;}
+      out(tab,`MAN: ${cmd.toUpperCase()}\n\nSYNOPSIS\n    ${cmd} [OPTIONS] [ARGS]\n\nDESCRIPTION\n    Simulated manual. Type "help" for all commands.`);
+      return '';
+    },
+    type(tab,args){return map.which(tab,args,null);},
+    time(tab,args,pipe){
+      const start=performance.now();
+      Shell.execSingle(tab,args.join(' '),pipe);
+      const ms=(performance.now()-start).toFixed(2);
+      out(tab,`\nreal\t${(ms/1000).toFixed(3)}s`);
+      return '';
+    },
+    sleep(tab,args){out(tab,`sleep ${args[0]||1}s [instant in PWA]`,'dim');return '';},
+
+    // ── Env ──
+    env(tab){Object.entries(tab.env).forEach(([k,v])=>out(tab,`${k}=${v}`));return '';},
+    export(tab,args){
+      if (!args[0]) return map.env(tab,[],null);
+      const i=args[0].indexOf('=');
+      if (i>-1){tab.env[args[0].slice(0,i)]=args[0].slice(i+1);}
+      return '';
+    },
+    unset(tab,args){if (args[0]) delete tab.env[args[0]]; return '';},
+    alias(tab,args){
+      if (!args[0]){Object.entries(tab.aliases).forEach(([k,v])=>out(tab,`alias ${k}='${v}'`));return '';}
+      const i=args[0].indexOf('=');
+      if (i>-1) tab.aliases[args[0].slice(0,i)]=args[0].slice(i+1).replace(/^['"]|['"]$/g,'');
+      return '';
+    },
+    history(tab){tab.history.slice().reverse().forEach((c,i)=>out(tab,`${String(i+1).padStart(4)}  ${c}`));return '';},
+
+    // ── Math ──
+    bc(tab,args,pipe){
+      const expr=(pipe||args.join(' ')).trim();
+      if (!expr){out(tab,'bc: pipe expression: echo "2+2" | bc','info');return '';}
+      try { const r=SafeMath.eval(expr); out(tab,String(r)); return String(r); }
+      catch(e){ out(tab,`bc: ${e.message}`,'err'); return null; }
+    },
+    expr(tab,args){
+      try { const r=SafeMath.eval(args.join(' ')); out(tab,String(r)); return String(r); }
+      catch(e){ out(tab,`expr: ${e.message}`,'err'); return null; }
+    },
+
+    // ── Editor ──
+    nano(tab,args){
+      const file=args[0]; if (!file){out(tab,'nano: missing file','err');return null;}
+      const fp=VFS.resolve(tab.cwd,file), node=VFS.get(fp);
+      if (node?.t==='d'){out(tab,'nano: is a directory','err');return null;}
+      Editor.open(fp, node?.content||'');
+      return '';
+    },
+    vim(tab,args){return map.nano(tab,args,null);},
+    vi(tab,args){return map.nano(tab,args,null);},
+
+    // ── Shell ──
+    clear(tab){Printer.clear(tab);return '';},
+    exit(tab){if(tabs_len()>1)Tabs.close(tab.id);else out(tab,'logout (close browser to exit)');return '';},
+    logout(tab){return map.exit(tab,[],null);},
+    source(tab,args){
+      const file=args[0]; if (!file){out(tab,'source: missing file','err');return null;}
+      const fp=VFS.resolve(tab.cwd,file), node=VFS.get(fp);
+      if (!node||node.t==='d'){out(tab,`source: ${file}: not found`,'err');return null;}
+      node.content.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).forEach(l=>Shell.run(tab,l));
+      return '';
+    },
+
+    // ── Fun ──
+    cowsay(tab,args){
+      const msg=args.join(' ')||'ArshUX!', b='-'.repeat(msg.length+2);
+      out(tab,` ${b}`);out(tab,`< ${msg} >`);out(tab,` ${b}`);
+      out(tab,'        \\   ^__^');out(tab,'         \\  (oo)\\_______');out(tab,'            (__)\\       )\\/\\');
+      out(tab,'                ||----w |');out(tab,'                ||     ||');return '';
+    },
+    fortune(tab){
+      const q=['Code is like humor. When you explain it, it\'s bad.','First solve the problem, then write the code.','Talk is cheap. Show me the code. — Linus','In ArshUX we trust.','Any fool can write code a computer understands.','Make it work, make it right, make it fast.'];
+      out(tab,q[Math.floor(Math.random()*q.length)]); return '';
+    },
+    sl(tab){out(tab,'🚂 choo choo! (ArshUX Express)');return '';},
+    yes(tab,args){const w=args[0]||'y';for(let i=0;i<10;i++)out(tab,w);out(tab,'(stopped)','dim');return '';},
+    banner(tab,args){out(tab,'');out(tab,`  ██ ${(args.join(' ')||'ARSHUX').toUpperCase()} ██`,'sys');out(tab,'');return '';},
+    matrix(tab){for(let i=0;i<4;i++){let r='';for(let j=0;j<32;j++)r+=Math.floor(Math.random()*2);out(tab,r,'sys');}out(tab,'[Wake up, Arsh…]','sys');return '';},
+    lolcat(tab,args,pipe){const text=pipe||args.join(' ');const colors=['err','ok','warn','sys','info'];text.split('\n').forEach((l,i)=>out(tab,l,colors[i%colors.length]));return text;},
+    figlet(tab,args){out(tab,`\n  ██████ ${args.join(' ').toUpperCase()} ██████\n`,'sys');return '';},
+
+    // ── Help ──
+    help(tab){
+      const cats=[
+        ['Navigation','cd, pwd, ls, tree, pushd, popd, find'],
+        ['Files','cat, head, tail, touch, mkdir, rm, cp, mv, diff, wc'],
+        ['Text','echo, grep, sed, sort, uniq, cut, tr, tee, xargs, base64, md5sum'],
+        ['Editor','nano / vim / vi'],
+        ['System','ps, top, kill, df, du, free, uname, uptime, date, mount, chmod'],
+        ['Network','ping, curl, wget, ifconfig, ip, netstat, ssh, nslookup'],
+        ['Package','pkg, apt, npm, pip'],
+        ['Dev','git, python3, node, which, man, time, source, bc, expr'],
+        ['Env','env, export, unset, alias, history'],
+        ['Fun','cowsay, fortune, sl, banner, matrix, lolcat, figlet, yes, cal'],
+        ['Shell','clear, exit | Pipe: | > >> && ;'],
+      ];
+      out(tab,'╔════════════════════════════════════╗','sys');
+      out(tab,'║   ArshUX v3 — Command Reference    ║','sys');
+      out(tab,'╚════════════════════════════════════╝','sys');
+      cats.forEach(([cat,cmds])=>{ out(tab,`\n  ${cat}:`,'warn'); out(tab,`    ${cmds}`); });
+      out(tab,'\n  Shortcuts: Tab=autocomplete  ↑↓=history  | > >> && ;','info');
+      return '';
+    },
+  };
+
+  function tabs_len() { return document.querySelectorAll('.tab').length; }
+
+  return {
+    exec(tab, cmd, args, pipeIn) {
+      const fn = map[cmd];
+      if (fn) { try { return fn(tab, args, pipeIn) ?? ''; } catch(e) { Printer.ln(tab, `${cmd}: ${e.message}`, 'err'); return null; } }
+      Printer.ln(tab, `arshux: command not found: ${cmd}`, 'err');
+      const sug = suggest(cmd);
+      if (sug) Printer.ln(tab, `Did you mean: ${sug}? (try "help")`, 'warn');
+      return null;
+    }
+  };
+
+  function suggest(cmd) {
+    const all = Object.keys(map);
+    let best = '', bestD = 99;
+    all.forEach(c => { const d = lev(cmd,c); if(d<bestD){bestD=d;best=c;} });
+    return bestD <= 3 ? best : '';
+  }
+  function lev(a,b) {
+    const m=a.length,n=b.length,dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
+    for(let i=1;i<=m;i++)for(let j=1;j<=n;j++) dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  }
+})();
+
+// ── Editor ───────────────────────────────────
+const Editor = {
+  file: null,
+  open(fp, content) {
+    this.file = fp;
+    document.getElementById('edTitle').textContent = `nano: ${fp}`;
+    document.getElementById('edArea').value = content;
+    document.getElementById('edModal').classList.add('open');
+    document.getElementById('edArea').focus();
+  },
+  save() {
+    if (!this.file) return;
+    const content = document.getElementById('edArea').value;
+    VFS.mkfile(this.file, content);
+    Printer.ln(Tabs.active, `Saved: ${this.file}`, 'ok');
+    this.close();
+  },
+  close() {
+    document.getElementById('edModal').classList.remove('open');
+    this.file = null;
+    Input.focus();
+  }
+};
+
+document.getElementById('edArea').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); Editor.save(); }
+  if (e.key === 'Escape') Editor.close();
+  if (e.key === 'Tab') { e.preventDefault(); const el = e.target; const s=el.selectionStart; el.value=el.value.slice(0,s)+'  '+el.value.slice(el.selectionEnd); el.selectionStart=el.selectionEnd=s+2; }
+});
+
+// ── Autocomplete ─────────────────────────────
+const AC = (() => {
+  const ALL = ['cd','ls','cat','echo','mkdir','rm','cp','mv','pwd','touch','grep','sed','sort','uniq','cut','tr','wc','head','tail','find','tree','nano','vim','vi','git','python3','node','ping','curl','wget','ifconfig','ip','ps','top','kill','df','du','free','uname','uptime','date','env','export','alias','history','clear','exit','help','pkg','apt','npm','pip','which','man','source','sudo','cowsay','fortune','banner','matrix','chmod','base64','md5sum','diff','bc','expr','pushd','popd','tee','xargs','time','sleep','printf','yes','sl','cal','lolcat','figlet','lsof','mount','netstat','nslookup','ssh','ssh','tar','zip','unzip','printf'];
+  let items = [], selIdx = -1;
+
+  function completions(tab, partial) {
+    if (!partial) return [];
+    const parts = partial.split(' ');
+    if (parts.length === 1) return ALL.filter(c=>c.startsWith(partial)).map(c=>({label:c,type:'cmd'}));
+    const last = parts[parts.length-1];
+    const dir = last.includes('/') ? VFS.resolve(tab.cwd, last.replace(/[^/]*$/,'')) : tab.cwd;
+    const stub = last.split('/').pop()||'';
+    const prefix = last.includes('/') ? last.replace(/[^/]*$/,'') : '';
+    const node = VFS.get(dir);
+    if (!node||node.t!=='d') return [];
+    return (node.c||[]).filter(c=>c.startsWith(stub)).map(c=>{
+      const fp=dir+'/'+c;
+      return { label: parts.slice(0,-1).join(' ')+' '+prefix+c, display:c+(VFS.get(fp)?.t==='d'?'/':''), type:VFS.get(fp)?.t==='d'?'dir':'file' };
+    });
+  }
+
+  function render(tab, val) {
+    const el = document.getElementById('ac');
+    items = completions(tab, val); selIdx = -1;
+    if (!items.length) { el.style.display='none'; return; }
+    el.innerHTML = items.map((it,i)=>`<div class="ac-i" data-i="${i}"><span>${it.display||it.label}</span><span class="ac-type">${it.type}</span></div>`).join('');
+    el.style.display = 'block';
+    const inp = document.getElementById('cmdIn');
+    const rect = inp.getBoundingClientRect();
+    el.style.left = rect.left + 'px';
+    el.style.bottom = (window.innerHeight - rect.top + 2) + 'px';
+    el.querySelectorAll('.ac-i').forEach(div=>{
+      div.addEventListener('click',()=>{ document.getElementById('cmdIn').value=items[+div.dataset.i].label; hide(); Input.focus(); });
+    });
+  }
+
+  function hide() { document.getElementById('ac').style.display='none'; selIdx=-1; }
+
+  function navigate(dir) {
+    items; if (!items.length) return false;
+    selIdx = Math.max(-1, Math.min(items.length-1, selIdx+dir));
+    document.querySelectorAll('.ac-i').forEach((el,i)=>el.classList.toggle('sel',i===selIdx));
+    return true;
+  }
+
+  return {
+    update(tab, val) { render(tab, val); },
+    hide,
+    triggerTab() {
+      const el = document.getElementById('cmdIn'), tab = Tabs.active;
+      if (!tab) return;
+      if (document.getElementById('ac').style.display==='block') {
+        if (selIdx>=0) { el.value=items[selIdx].label; hide(); }
+        else if (items.length===1) { el.value=items[0].label; hide(); }
+      } else {
+        render(tab, el.value);
+        if (items.length===1) { el.value=items[0].label; hide(); }
+      }
+      Input.focus();
+    },
+    navigate
+  };
+})();
+
+// ── Input ─────────────────────────────────────
+const Input = {
+  focus() { setTimeout(()=>document.getElementById('cmdIn')?.focus(), 40); },
+  insert(ch) {
+    const el=document.getElementById('cmdIn');
+    const s=el.selectionStart, e=el.selectionEnd;
+    el.value=el.value.slice(0,s)+ch+el.value.slice(e);
+    el.setSelectionRange(s+ch.length,s+ch.length);
+    el.focus();
+  },
+  async paste() {
+    try { const t=await navigator.clipboard.readText(); this.insert(t); }
+    catch { Printer.ln(Tabs.active,'[Use Ctrl+V or long-press to paste]','warn'); }
+  }
+};
+
+const cmdIn = document.getElementById('cmdIn');
+cmdIn.addEventListener('input', () => {
+  const tab = Tabs.active; if (!tab) return;
+  AC.update(tab, cmdIn.value);
+});
+
+cmdIn.addEventListener('keydown', e => {
+  const acOpen = document.getElementById('ac').style.display === 'block';
+  switch(e.key) {
+    case 'Enter':
+      e.preventDefault(); AC.hide();
+      const line = cmdIn.value; cmdIn.value = '';
+      if (Tabs.active) Shell.run(Tabs.active, line);
+      break;
+    case 'Tab':
+      e.preventDefault(); AC.triggerTab(); break;
+    case 'ArrowUp':
+      e.preventDefault();
+      if (acOpen) AC.navigate(-1);
+      else Shell.navHistory(-1);
+      break;
+    case 'ArrowDown':
+      e.preventDefault();
+      if (acOpen) AC.navigate(1);
+      else Shell.navHistory(1);
+      break;
+    case 'Escape': AC.hide(); break;
+    case 'c': if (e.ctrlKey){e.preventDefault();Shell.sendCtrl(3);} break;
+    case 'l': if (e.ctrlKey){e.preventDefault();Printer.clear(Tabs.active);} break;
+    case 'd': if (e.ctrlKey){e.preventDefault();Shell.sendCtrl(4);} break;
+    case 't': if (e.ctrlKey){e.preventDefault();Tabs.mk();} break;
+  }
+});
+
+// ── UI ────────────────────────────────────────
+const UI = {
+  toggleTheme() {
+    const light = document.documentElement.getAttribute('data-theme') === 'light';
+    if (!light) {
+      document.documentElement.setAttribute('data-theme','light');
+      document.documentElement.style.setProperty('--bg','#f0f0f0');
+      document.documentElement.style.setProperty('--sur','#e0e0e0');
+      document.documentElement.style.setProperty('--sur2','#d0d0d0');
+      document.documentElement.style.setProperty('--text','#222');
+      document.documentElement.style.setProperty('--neon','#0066aa');
+      document.documentElement.style.setProperty('--green','#007700');
+      document.documentElement.style.setProperty('--dim','#888');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      ['--bg','--sur','--sur2','--text','--neon','--green','--dim'].forEach(v=>document.documentElement.style.removeProperty(v));
+    }
+  },
+  showHelp() { if (Tabs.active) Shell.run(Tabs.active, 'help'); },
+  clearActive() { if (Tabs.active) Printer.clear(Tabs.active); },
+  boot(tab) {
+    const lines = [
+      ['',''],
+      ['  ╔══════════════════════════════════════╗','sys'],
+      ['  ║     ArshUX Terminal  v3.0            ║','sys'],
+      ['  ║   Persistent · Modular · Neon        ║','sys'],
+      ['  ╚══════════════════════════════════════╝','sys'],
+      ['',''],
+      ['  Kernel : ArshUX-Linux 5.15.0','info'],
+      ['  VFS    : IndexedDB Persistent ✓','ok'],
+      ['  SafeMath: eval-free ✓','ok'],
+      ['  User   : arsh @ arshux-machine','info'],
+      ['',''],
+      ['  Type "help" for all 80+ commands.','warn'],
+      ['',''],
+    ];
+    lines.forEach(([t,c])=>Printer.ln(tab,t,c));
+  }
+};
+
+// ── Clock ─────────────────────────────────────
+setInterval(()=>{
+  const el=document.getElementById('stClock');
+  if (el) el.textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+
+// ── PWA Service Worker ────────────────────────
+if ('serviceWorker' in navigator) {
+  const sw = `
+    const CACHE='arshux-v3';
+    const ASSETS=['${location.href}'];
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+  `;
+  const blob = new Blob([sw], {type:'text/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+
+// ── Init ──────────────────────────────────────
+document.getElementById('newTab').addEventListener('click', ()=>Tabs.mk());
+document.addEventListener('click', e=>{ if (!e.target.closest('#ac')&&!e.target.closest('#cmdIn')) AC.hide(); });
+
+// Boot after VFS loads
+VFS.init().then(()=>{
+  Tabs.mk('bash 1');
+  Input.focus();
+}).catch(err=>{
+  Tabs.mk('bash 1');
+  Printer.ln(Tabs.active, `[VFS Warning: ${err.message} — using memory mode]`, 'warn');
+  Input.focus();
+});
+</script>
+</body>
+</html>
