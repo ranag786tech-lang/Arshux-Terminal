@@ -15,7 +15,7 @@
 <br/>
 
 > **ArshUX Terminal** is a zero-dependency, fully offline-capable terminal emulator  
-> that runs in your browser — with persistent file storage, 80+ commands, multi-tab  
+> that runs in your browser — with persistent file storage, 100+ commands, multi-tab
 > support, a built-in file editor, and a gorgeous neon dark UI.
 
 <br/>
@@ -83,7 +83,7 @@ It simulates a full Linux-like environment inside your browser tab, complete wit
 
 ## 💻 Commands
 
-ArshUX supports **80+ commands** across 10 categories:
+ArshUX supports **100+ commands** across 10 categories:
 
 <details>
 <summary><b>📁 Navigation & Files</b></summary>
@@ -196,7 +196,7 @@ alias ll="ls -la"
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              ArshUX Terminal v3.0                   │
+│              ArshUX Terminal v4.0 Pro                   │
 ├────────────────┬────────────────────────────────────┤
 │  Layer         │  Technology                        │
 ├────────────────┼────────────────────────────────────┤
@@ -324,12 +324,12 @@ arshux-terminal/
    ✓ Modular JS architecture
    ✓ Safe math parser (no eval)
    ✓ PWA manifest + Service Worker
-   ✓ 80+ commands
+   ✓ 100+ commands
    ✓ Multi-tab, editor, autocomplete
 
-🔄 Phase 2 — Real Power (Planned)
-   ○ WebContainer integration (real bash via StackBlitz SDK)
-   ○ Real npm, git, python execution
+🔄 Phase 2 — Real Power (DONE)
+   ✓ Pyodide integration (Real Python) (real bash via StackBlitz SDK)
+   ✓ Real Git execution (isomorphic-git)
    ○ File upload / download from VFS
    ○ Split-screen terminal panes
    ○ Theme presets (Dracula, Solarized, Nord)
