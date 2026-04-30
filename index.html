@@ -15,6 +15,10 @@
 <link rel="icon" type="image/png" href="/arshux-terminal/icons/icon-512.png"/>
 
 <title>ArshUX Terminal</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+<script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
+<script src="https://unpkg.com/isomorphic-git"></script>
+<script src="https://unpkg.com/isomorphic-git/http/web/index.umd.js"></script>
 <style>
 :root{
   --neon:#00ffe7;--neon2:#bf00ff;--neon3:#ff006e;
@@ -334,11 +338,12 @@ const DB = (() => {
 
 // ── VFS ──
 const VFS = (() => {
+  let pyodide = null;
   const DEFAULTS = {
     '/':                    {t:'d',c:['home','etc','tmp','usr','bin','var']},
     '/home':                {t:'d',c:['arsh']},
     '/home/arsh':           {t:'d',c:['readme.txt','projects','notes.txt','.bashrc']},
-    '/home/arsh/readme.txt':{t:'f',content:'Welcome to ArshUX v3!\n\nPersistent filesystem — files survive refresh!\n\nType "help" for all commands.'},
+    '/home/arsh/readme.txt':{t:'f',content:'Welcome to ArshUX v4 Pro! (Now with Real Python ArshUX v3! Git)\n\nPersistent filesystem — files survive refresh!\n\nType "help" for all commands.'},
     '/home/arsh/notes.txt': {t:'f',content:'My notes:\n- Learn Rust\n- Build ArshUX v4\n- Deploy on cloud'},
     '/home/arsh/.bashrc':   {t:'f',content:'# ArshUX bash\nalias ll="ls -la"\nalias cls="clear"\nexport EDITOR=nano'},
     '/home/arsh/projects':  {t:'d',c:['arshux']},
@@ -358,7 +363,7 @@ const VFS = (() => {
     '/bin':                 {t:'d',c:['sh','bash']},
     '/var':                 {t:'d',c:['log']},
     '/var/log':             {t:'d',c:['syslog']},
-    '/var/log/syslog':      {t:'f',content:'[boot] ArshUX 3.0 loaded\n[boot] IndexedDB: OK'},
+    '/var/log/syslog':      {t:'f',content:'[boot] ArshUX 4.0 Pro loaded\n[boot] IndexedDB: OK'},
   };
 
   const cache={};
@@ -384,6 +389,7 @@ const VFS = (() => {
 
   return {
     async init(){
+      this.initPy();
       await DB.open();
       const keys=await DB.keys();
       if(!keys.length){
@@ -393,6 +399,8 @@ const VFS = (() => {
       }
     },
     get(path){return cache[path]||null;},
+    async initPy(){ if(!pyodide) { Printer.ln(Tabs.active, "Initializing Python...", "info"); pyodide = await loadPyodide(); Printer.ln(Tabs.active, "Python Ready ✓", "ok"); } return pyodide; },
+    async runPy(code){ const py = await this.initPy(); try { py.setStdout({ batched: (s) => Printer.ln(Tabs.active, s) }); return await py.runPythonAsync(code); } catch(e) { Printer.ln(Tabs.active, e.message, "err"); } },
     set(path,node){cache[path]=node;dirty.add(path);schedSave();},
     del(path){
       const prefix=path+'/';
@@ -512,29 +520,29 @@ function expandVars(str,tab){return str.replace(/\$\{?([A-Z_][A-Z0-9_]*)\}?/gi,(
 
 // ── Shell ──
 const Shell={
-  run(tab,raw){
+  async run(tab,raw){
     raw=raw.trim();if(!raw)return;
     const fw=raw.split(' ')[0];
     if(tab.aliases[fw])raw=tab.aliases[fw]+raw.slice(fw.length);
     if(tab.history[0]!==raw)tab.history.unshift(raw);
     tab.histIdx=-1;tab.cmds++;Tabs.updateStatus();Printer.cmd(tab,raw);
-    if(/\s&&\s/.test(raw)){for(const p of raw.split(/\s&&\s/)){if(!this.execLine(tab,p.trim()))break;}return;}
-    if(/;\s*/.test(raw)){raw.split(/;\s*/).filter(Boolean).forEach(p=>this.execLine(tab,p.trim()));return;}
-    this.execLine(tab,raw);
+    if(/\s&&\s/.test(raw)){for(const p of raw.split(/\s&&\s/)){if(!await this.execLine(tab,p.trim()))break;}return;}
+    if(/;\s*/.test(raw)){raw.split(/;\s*/).filter(Boolean).forEach(async p=>await this.execLine(tab,p.trim()));return;}
+    await this.execLine(tab,raw);
   },
-  execLine(tab,line){
+  async execLine(tab,line){
     if(/\s\|\s/.test(line)){
       const parts=line.split(/\s\|\s/);let pIn=null;
-      for(const p of parts)pIn=this.execSingle(tab,p.trim(),pIn);
+      for(const p of parts)pIn=await this.execSingle(tab,p.trim(),pIn);
       return pIn!==null;
     }
     const app=line.match(/^(.+?)\s>>\s(.+)$/);
-    if(app){const o=this.execSingle(tab,app[1].trim(),null);const fp=VFS.resolve(tab.cwd,app[2].trim());const ex=VFS.get(fp);VFS.mkfile(fp,(ex?.content||'')+(o||''));return true;}
+    if(app){const o=await this.execSingle(tab,app[1].trim(),null);const fp=VFS.resolve(tab.cwd,app[2].trim());const ex=VFS.get(fp);VFS.mkfile(fp,(ex?.content||'')+(o||''));return true;}
     const red=line.match(/^(.+?)\s>\s(.+)$/);
-    if(red){const o=this.execSingle(tab,red[1].trim(),null);VFS.mkfile(VFS.resolve(tab.cwd,red[2].trim()),o||'');return true;}
-    return this.execSingle(tab,line,null)!==null;
+    if(red){const o=await this.execSingle(tab,red[1].trim(),null);VFS.mkfile(VFS.resolve(tab.cwd,red[2].trim()),o||'');return true;}
+    return await this.execSingle(tab,line,null)!==null;
   },
-  execSingle(tab,line,pIn){
+  async execSingle(tab,line,pIn){
     const[cmd,...rawArgs]=parseTokens(line);if(!cmd)return'';
     const args=rawArgs.map(a=>expandVars(a,tab));
     return Cmds.exec(tab,cmd,args,pIn);
@@ -626,7 +634,7 @@ const Cmds=(()=>{
     whoami(tab){return o(tab,tab.env.USER);},
     hostname(tab){return o(tab,tab.env.HOSTNAME);},
     id(tab){return o(tab,`uid=1000(${tab.env.USER}) gid=1000(${tab.env.USER}) groups=1000,27,sudo`);},
-    uname(tab,args){return o(tab,args.includes('-a')?'ArshUX-Linux 5.15.0 #3 SMP x86_64 GNU/Linux':'ArshUX-Linux');},
+    uname(tab,args){return o(tab,args.includes('-a')?'ArshUX-Linux 6.x (Functional) #3 SMP x86_64 GNU/Linux':'ArshUX-Linux');},
     uptime(tab){return o(tab,'up 3 days, 7:42, 1 user, load: 0.12 0.08 0.05');},
     date(tab){return o(tab,new Date().toString());},
     cal(tab){const d=new Date();o(tab,`   ${d.toLocaleString('default',{month:'long'})} ${d.getFullYear()}`);o(tab,'Su Mo Tu We Th Fr Sa');return'';},
@@ -655,16 +663,43 @@ const Cmds=(()=>{
     apt(tab,args){return map.pkg(tab,args,null);},
     'apt-get'(tab,args){return map.pkg(tab,args,null);},
     npm(tab,args){const sub=args[0];if(sub==='init')o(tab,'Created package.json');else if(sub==='install')o(tab,`installing ${args[1]||'deps'}... OK`,'ok');else if(sub==='run')o(tab,`running ${args[1]}...`);else o(tab,'npm: init|install|run|start');return'';},
-    pip(tab,args){return map.pkg(tab,args,null);},
-    git(tab,args){const sub=args[0];if(sub==='init')o(tab,`Initialized empty repo in ${tab.cwd}/.git/`);else if(sub==='status')o(tab,'On branch main\nnothing to commit');else if(sub==='log')o(tab,'commit a1b2c3d (HEAD -> main)\nAuthor: arsh\n\n    Initial commit');else if(sub==='add')o(tab,`staged: ${args[1]||'.'}`);else if(sub==='commit')o(tab,`[main a1b2c3] ${args.filter(a=>a!=='-m').join(' ')}`);else if(sub==='push')o(tab,'To origin/main: OK');else if(sub==='pull')o(tab,'Already up to date.');else if(sub==='clone')o(tab,`Cloning into '${(args[1]||'repo').split('/').pop()}'... done.`);else if(sub==='branch')o(tab,'* main\n  dev');else if(sub==='checkout')o(tab,`Switched to '${args[1]||'main'}'`);else o(tab,`git: unknown: ${sub||'?'}`);return'';},
-    python3(tab,args){o(tab,args[0]?`[python3 ${args[0]}: simulated]`:'Python 3.11.0\n[REPL not supported in PWA]');return'';},
+    async pip(tab,args){if(args[0]==='install'){const py = await VFS.initPy();await py.loadPackage('micropip');const micropip = py.pyodide_py.import_module('micropip');for(const p of args.slice(1)){o(tab,`Installing ${p}...`);await micropip.install(p);o(tab,`${p} installed`,'ok');}}else{o(tab,'pip install <package>');}return'';},
+    async git(tab,args){
+      const sub=args[0];
+      if(!window.fs){
+        window.fs = new LightningFS('arshux_git');
+        window.pfs = window.fs.promises;
+      }
+      const dir = tab.cwd;
+      try {
+        if(sub==='clone'){
+          const url = args[1];
+          if(!url){o(tab,'git clone <url>');return'';}
+          o(tab,`Cloning ${url}...`);
+          await git.clone({fs, http:GitHttpWeb, dir, url, singleBranch:true, depth:1});
+          o(tab,'Clone complete','ok');
+        } else if(sub==='status'){
+          const s = await git.statusMatrix({fs, dir});
+          o(tab, s.map(row => `${row[0]}: ${row[1]}`).join('\n'));
+        } else if(sub==='init'){
+          await git.init({fs, dir});
+          o(tab,`Initialized empty Git repository in ${dir}`);
+        } else {
+          o(tab, `git ${sub} is partially implemented. Use clone/init/status.`);
+        }
+      } catch(e) {
+        o(tab, `git error: ${e.message}`, 'err');
+      }
+      return'';
+    },
+    async python3(tab,args){if(args[0]){const fp=VFS.resolve(tab.cwd,args[0]),n=VFS.get(fp);if(!n){o(tab,`python3: ${args[0]}: No such file`,'err');return null;}return await VFS.runPy(n.content);}else{o(tab,'Python 3.12.0 (Pyodide)\nType code in a file and run with "python3 file.py"','info');return'';}},
     node(tab,args){o(tab,args[0]?`[node ${args[0]}: simulated]`:'Node.js v20.0.0\n[REPL not supported in PWA]');return'';},
     which(tab,args){const known=['ls','cat','grep','echo','cd','mkdir','rm','cp','mv','git','python3','node','curl','wget','ping','nano','vim'];if(!args[0]){o(tab,'which: missing arg','err');return null;}o(tab,known.includes(args[0])?`/usr/bin/${args[0]}`:`which: ${args[0]}: not found`);return'';},
     man(tab,args){const cmd=args[0];if(!cmd){o(tab,'man: what page?','err');return null;}o(tab,`MAN: ${cmd.toUpperCase()}\n\nSYNOPSIS\n    ${cmd} [OPTIONS] [ARGS]\n\nDESCRIPTION\n    Simulated manual. Type "help" for all commands.`);return'';},
     time(tab,args,pipe){const start=performance.now();Shell.execSingle(tab,args.join(' '),pipe);o(tab,`\nreal\t${((performance.now()-start)/1000).toFixed(3)}s`);return'';},
     sleep(tab,args){o(tab,`sleep ${args[0]||1}s [instant in PWA]`,'dim');return'';},
     env(tab){Object.entries(tab.env).forEach(([k,v])=>o(tab,`${k}=${v}`));return'';},
-    export(tab,args){if(!args[0])return map.env(tab,[],null);const i=args[0].indexOf('=');if(i>-1)tab.env[args[0].slice(0,i)]=args[0].slice(i+1);return'';},
+    async export(tab,args){if(!args[0])return map.env(tab,[],null);const i=args[0].indexOf('=');if(i>-1){const k=args[0].slice(0,i),v=args[0].slice(i+1);tab.env[k]=v;if(k==='AI_KEY') await DB.set('ai_key', v);}return'';},
     unset(tab,args){if(args[0])delete tab.env[args[0]];return'';},
     alias(tab,args){if(!args[0]){Object.entries(tab.aliases).forEach(([k,v])=>o(tab,`alias ${k}='${v}'`));return'';}const i=args[0].indexOf('=');if(i>-1)tab.aliases[args[0].slice(0,i)]=args[0].slice(i+1).replace(/^['"]|['"]$/g,'');return'';},
     history(tab){tab.history.slice().reverse().forEach((c,i)=>o(tab,`${String(i+1).padStart(4)}  ${c}`));return'';},
@@ -676,7 +711,7 @@ const Cmds=(()=>{
     clear(tab){Printer.clear(tab);return'';},
     exit(tab){if(Tabs.tabsLen()>1)Tabs.close(tab.id);else o(tab,'logout (close browser to exit)');return'';},
     logout(tab){return map.exit(tab,[],null);},
-    source(tab,args){const file=args[0];if(!file){o(tab,'source: missing file','err');return null;}const fp=VFS.resolve(tab.cwd,file),n=VFS.get(fp);if(!n||n.t==='d'){o(tab,`source: ${file}: not found`,'err');return null;}n.content.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).forEach(l=>Shell.run(tab,l));return'';},
+    source(tab,args){const file=args[0];if(!file){o(tab,'source: missing file','err');return null;}const fp=VFS.resolve(tab.cwd,file),n=VFS.get(fp);if(!n||n.t==='d'){o(tab,`source: ${file}: not found`,'err');return null;}n.content.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).forEach(l=>await Shell.run(tab,l));return'';},
     cowsay(tab,args){const msg=args.join(' ')||'ArshUX!',b='-'.repeat(msg.length+2);o(tab,` ${b}`);o(tab,`< ${msg} >`);o(tab,` ${b}`);o(tab,'        \\   ^__^');o(tab,'         \\  (oo)\\_______');o(tab,'            (__)\\       )\\/\\');o(tab,'                ||----w |');o(tab,'                ||     ||');return'';},
     fortune(tab){const q=['Code is like humor. When you explain it, it\'s bad.','First solve the problem, then write the code.','Talk is cheap. Show me the code. — Linus','In ArshUX we trust.','Make it work, make it right, make it fast.'];o(tab,q[Math.floor(Math.random()*q.length)]);return'';},
     sl(tab){o(tab,'🚂 choo choo! (ArshUX Express)');return'';},
@@ -685,10 +720,38 @@ const Cmds=(()=>{
     matrix(tab){for(let i=0;i<4;i++){let r='';for(let j=0;j<32;j++)r+=Math.floor(Math.random()*2);o(tab,r,'sys');}o(tab,'[Wake up, Arsh…]','sys');return'';},
     lolcat(tab,args,pipe){const text=pipe||args.join(' ');const colors=['err','ok','warn','sys','info'];text.split('\n').forEach((l,i)=>o(tab,l,colors[i%colors.length]));return text;},
     figlet(tab,args){o(tab,`\n  ██████ ${args.join(' ').toUpperCase()} ██████\n`,'sys');return'';},
+    async ai(tab,args){
+      const query = args.join(' ');
+      if(!query){o(tab, 'ai <your question>'); return '';}
+      const key = await DB.get('ai_key');
+      if(!key){o(tab, 'AI Key not found. Use "export AI_KEY=your_key" to set it for this session, or stay tuned for a config command.', 'warn'); return '';}
+
+      o(tab, 'Thinking...');
+      try {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [{role: 'user', content: query}]
+          })
+        });
+        const data = await res.json();
+        const msg = data.choices[0].message.content;
+        o(tab, msg);
+        return msg;
+      } catch(e) {
+        o(tab, `AI error: ${e.message}`, 'err');
+      }
+      return '';
+    },
     help(tab){
       const cats=[['Navigation','cd pwd ls tree pushd popd find'],['Files','cat head tail touch mkdir rm cp mv diff wc'],['Text','echo grep sed sort uniq cut tr tee xargs base64 md5sum'],['Editor','nano vim vi (Ctrl+S=save Esc=close)'],['System','ps top kill df du free uname uptime date mount chmod'],['Network','ping curl wget ifconfig netstat nslookup ssh'],['Package','pkg apt npm pip'],['Dev','git python3 node which man time source bc expr'],['Env','env export unset alias history'],['Fun','cowsay fortune sl banner matrix lolcat figlet yes cal'],['Shell','clear exit | > >> && ;']];
       o(tab,'╔════════════════════════════════════╗','sys');
-      o(tab,'║   ArshUX v3 — Command Reference    ║','sys');
+      o(tab,'║   ArshUX v4 Pro — Command Reference    ║','sys');
       o(tab,'╚════════════════════════════════════╝','sys');
       cats.forEach(([cat,cmds])=>{o(tab,`\n  ${cat}:`,'warn');o(tab,`    ${cmds}`);});
       o(tab,'\n  Tab=autocomplete  ↑↓=history  | > >> && ;','info');
@@ -697,7 +760,7 @@ const Cmds=(()=>{
   };
 
   return{
-    exec(tab,cmd,args,pIn){
+    async exec(tab,cmd,args,pIn){
       const fn=map[cmd];
       if(fn){try{return fn(tab,args,pIn)??'';}catch(e){Printer.ln(tab,`${cmd}: ${e.message}`,'err');return null;}}
       Printer.ln(tab,`arshux: command not found: ${cmd}`,'err');
@@ -724,7 +787,7 @@ document.getElementById('edArea').addEventListener('keydown',e=>{
 
 // ── Autocomplete ──
 const AC=(()=>{
-  const ALL=['cd','ls','cat','echo','mkdir','rm','cp','mv','pwd','touch','grep','sed','sort','uniq','cut','tr','wc','head','tail','find','tree','nano','vim','vi','git','python3','node','ping','curl','wget','ifconfig','ip','ps','top','kill','df','du','free','uname','uptime','date','env','export','alias','history','clear','exit','help','pkg','apt','npm','pip','which','man','source','sudo','cowsay','fortune','banner','matrix','chmod','base64','md5sum','diff','bc','expr','pushd','popd','tee','xargs','time','sleep','printf','yes','sl','cal','lolcat','figlet','lsof','mount','netstat','nslookup','ssh'];
+  const ALL=['cd','ls','cat','echo','mkdir','rm','cp','mv','pwd','touch','grep','sed','sort','uniq','cut','tr','wc','head','tail','find','tree','nano','vim','vi','git','python3','node','ping','curl','wget','ifconfig','ip','ps','top','kill','df','du','free','uname','uptime','date','env','export','alias','history','clear','exit','help','pkg','apt','npm','pip','which','man','source','sudo','cowsay','fortune','banner','matrix','chmod','base64','md5sum','diff','bc','expr','pushd','popd','tee','xargs','time','sleep','printf','yes','sl','cal','lolcat','figlet','lsof','mount','netstat','nslookup','ssh','ai'];
   let items=[],selIdx=-1;
   function comps(tab,partial){
     if(!partial)return[];
@@ -767,10 +830,10 @@ const Input={
 
 const cmdIn=document.getElementById('cmdIn');
 cmdIn.addEventListener('input',()=>{const tab=Tabs.active;if(!tab)return;AC.update(tab,cmdIn.value);});
-cmdIn.addEventListener('keydown',e=>{
+cmdIn.addEventListener('keydown',async e=>{
   const acOpen=document.getElementById('ac').style.display==='block';
   switch(e.key){
-    case'Enter':e.preventDefault();AC.hide();const line=cmdIn.value;cmdIn.value='';if(Tabs.active)Shell.run(Tabs.active,line);break;
+    case'Enter':e.preventDefault();AC.hide();const line=cmdIn.value;cmdIn.value='';if(Tabs.active)await Shell.run(Tabs.active,line);break;
     case'Tab':e.preventDefault();AC.triggerTab();break;
     case'ArrowUp':e.preventDefault();if(acOpen)AC.navigate(-1);else Shell.navHistory(-1);break;
     case'ArrowDown':e.preventDefault();if(acOpen)AC.navigate(1);else Shell.navHistory(1);break;
@@ -794,10 +857,10 @@ const UI={
       ['--bg','--sur','--sur2','--text','--neon','--green','--dim'].forEach(v=>document.documentElement.style.removeProperty(v));
     }
   },
-  showHelp(){if(Tabs.active)Shell.run(Tabs.active,'help');},
+  showHelp(){if(Tabs.active)await Shell.run(Tabs.active,'help');},
   clearActive(){if(Tabs.active)Printer.clear(Tabs.active);},
   boot(tab){
-    [['',''],['  ╔══════════════════════════════════════╗','sys'],['  ║     ArshUX Terminal  v3.0            ║','sys'],['  ║   Persistent · Modular · Neon        ║','sys'],['  ╚══════════════════════════════════════╝','sys'],['',''],['  Kernel : ArshUX-Linux 5.15.0','info'],['  VFS    : IndexedDB Persistent ✓','ok'],['  PWA    : Installed ✓','ok'],['  User   : arsh @ arshux-machine','info'],['',''],['  Type "help" for all 80+ commands.','warn'],['','']].forEach(([t,c])=>Printer.ln(tab,t,c));
+    [['',''],['  ╔══════════════════════════════════════╗','sys'],['  ║     ArshUX Terminal  v4.0 (Pro)            ║','sys'],['  ║   Real Python · Real Git · AI        ║','sys'],['  ╚══════════════════════════════════════╝','sys'],['',''],['  Kernel : ArshUX-Linux 6.x (Functional)','info'],['  VFS    : IndexedDB Persistent ✓','ok'],['  PWA    : Installed ✓','ok'],['  User   : arsh @ arshux-machine','info'],['',''],['  Type "help" for all 80+ commands.','warn'],['','']].forEach(([t,c])=>Printer.ln(tab,t,c));
   }
 };
 
