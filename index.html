@@ -725,7 +725,7 @@ const Cmds=(()=>{
       if(!query){o(tab, 'ai <your question>'); return '';}
       const key = await DB.get('ai_key');
       if(!key){o(tab, 'AI Key not found. Use "export AI_KEY=your_key" to set it for this session, or stay tuned for a config command.', 'warn'); return '';}
-
+      
       o(tab, 'Thinking...');
       try {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
