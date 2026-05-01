@@ -1,477 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>ArshUX OMNI | Rana Hamza</title>
+    
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
+    <script src="https://unpkg.com/isomorphic-git"></script>
+    <script src="https://unpkg.com/isomorphic-git/http/web/index.umd.js"></script>
 
-<link rel="manifest" href="/arshux-terminal/manifest.json"/>
-<meta name="theme-color" content="#0a0a0f"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="ArshUX"/>
-<link rel="apple-touch-icon" href="/arshux-terminal/icons/icon-192.png"/>
-<link rel="icon" type="image/png" href="/arshux-terminal/icons/icon-512.png"/>
+    <style>
+        :root {
+            --neon: #00ffe7; --neon2: #bf00ff; --bg: #050508; --sur: #0d0d16;
+            --text: #e0e6ed; --green: #00ff41; --red: #ff4060; --amber: #ffb300;
+            --font: 'Fira Code', 'Courier New', monospace;
+        }
 
-<title>ArshUX Terminal Pro</title>
-<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-<script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
-<script src="https://unpkg.com/isomorphic-git"></script>
-<script src="https://unpkg.com/isomorphic-git/http/web/index.umd.js"></script>
-<style>
-:root{
-  --neon:#00ffe7;--neon2:#bf00ff;--neon3:#ff006e;
-  --amber:#ffb300;--bg:#0a0a0f;--sur:#0f0f1a;--sur2:#13131f;
-  --text:#c8d6e5;--dim:#3a3a5c;--green:#00ff41;
-  --red:#ff4060;--yellow:#ffe04b;--blue:#4fc3f7;
-  --font:'Courier New',Courier,monospace;
-  --fs:13px;
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);overflow:hidden;font-family:var(--font)}
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,231,.012) 2px,rgba(0,255,231,.012) 4px);
-}
-@keyframes flicker{0%,100%{opacity:1}93%{opacity:.82}94%{opacity:1}97%{opacity:.9}98%{opacity:1}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+        /* UI Glassmorphism */
+        #hdr { display: flex; align-items: center; padding: 12px; background: rgba(13, 13, 22, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 231, 0.2); z-index: 10; }
+        #logo { font-size: 16px; font-weight: bold; letter-spacing: 2px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        #logo span { color: var(--neon2); }
 
-/* Header */
-#hdr{
-  display:flex;align-items:center;gap:8px;padding:6px 12px;
-  background:var(--sur);border-bottom:1px solid rgba(0,255,231,.12);
-  flex-shrink:0;min-height:40px;
-}
-#logo{
-  font-size:14px;font-weight:700;letter-spacing:3px;white-space:nowrap;
-  color:var(--neon);text-shadow:0 0 10px var(--neon),0 0 30px rgba(0,255,231,.4);
-  animation:flicker 10s infinite;
-}
-#logo em{color:var(--neon2);font-style:normal}
-#logo sup{font-size:8px;color:var(--amber);letter-spacing:0}
-.dots{display:flex;gap:5px;margin-right:2px}
-.dot{width:9px;height:9px;border-radius:50%}
-.dot.r{background:#ff5f57;box-shadow:0 0 5px #ff5f57}
-.dot.y{background:#febc2e;box-shadow:0 0 5px #febc2e}
-.dot.g{background:#28c840;box-shadow:0 0 5px #28c840}
-#tabs{display:flex;gap:3px;flex:1;overflow-x:auto;scrollbar-width:none}
-#tabs::-webkit-scrollbar{display:none}
-.tab{
-  display:flex;align-items:center;gap:5px;padding:3px 10px;
-  border-radius:5px 5px 0 0;font-size:11px;cursor:pointer;
-  background:var(--sur2);color:var(--dim);
-  border:1px solid rgba(255,255,255,.06);border-bottom:none;
-  white-space:nowrap;transition:.15s;user-select:none;
-}
-.tab.active{background:var(--bg);color:var(--neon);border-color:rgba(0,255,231,.3);text-shadow:0 0 6px var(--neon)}
-.tabx{opacity:.4;font-size:10px;padding:0 2px}
-.tabx:hover{opacity:1;color:var(--red)}
-#newTab{
-  background:transparent;border:1px dashed rgba(255,255,255,.15);
-  color:var(--dim);padding:2px 8px;border-radius:5px;
-  cursor:pointer;font-size:13px;font-family:var(--font);transition:.15s;flex-shrink:0;
-}
-#newTab:hover{color:var(--neon);border-color:var(--neon)}
-.hbtn{
-  background:transparent;border:1px solid rgba(255,255,255,.1);
-  color:var(--dim);padding:2px 8px;border-radius:4px;
-  font-size:11px;cursor:pointer;font-family:var(--font);transition:.15s;flex-shrink:0;
-}
-.hbtn:hover{color:var(--neon);border-color:var(--neon)}
-#hdrBtns{display:flex;gap:4px;margin-left:auto}
+        #tabs { display: flex; gap: 8px; flex: 1; margin-left: 20px; overflow-x: auto; scrollbar-width: none; }
+        .tab { padding: 4px 15px; background: #1a1a2e; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; transition: 0.3s; }
+        .tab.active { border-color: var(--neon); box-shadow: 0 0 8px rgba(0, 255, 231, 0.3); color: var(--neon); }
 
-/* Terminal */
-#terminals{flex:1;position:relative;overflow:hidden}
-.pane{position:absolute;inset:0;display:none;flex-direction:column}
-.pane.active{display:flex;animation:fadeIn .12s ease}
-.out{
-  flex:1;overflow-y:auto;padding:10px 14px;
-  font-size:var(--fs);line-height:1.7;color:var(--text);
-  scrollbar-width:thin;scrollbar-color:var(--dim) transparent;
-  overscroll-behavior:contain;
-}
-.out::-webkit-scrollbar{width:4px}
-.out::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
-.ln{animation:fadeIn .08s ease;word-break:break-word;white-space:pre-wrap}
-.ln.cmd{color:var(--neon)}
-.ln.err{color:var(--red)}
-.ln.warn{color:var(--yellow)}
-.ln.ok{color:var(--green)}
-.ln.sys{color:var(--neon2)}
-.ln.info{color:var(--blue)}
-.ln.dim{color:var(--dim)}
+        /* Terminal Core */
+        #terminals { flex: 1; position: relative; }
+        .pane { position: absolute; inset: 0; display: none; flex-direction: column; padding: 15px; overflow-y: auto; scrollbar-width: thin; }
+        .pane.active { display: flex; }
 
-/* Input */
-#inputWrap{
-  display:flex;align-items:center;gap:6px;padding:7px 10px;
-  background:var(--sur);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;
-}
-#promptLabel{font-size:var(--fs);flex-shrink:0;white-space:nowrap}
-#promptDir{color:var(--neon2)}
-#promptSym{color:var(--amber)}
-#cmdIn{
-  flex:1;background:transparent;border:none;outline:none;
-  color:#fff;font-family:var(--font);font-size:var(--fs);
-  caret-color:var(--neon);min-width:0;
-}
-.cursor{
-  width:8px;height:15px;background:var(--neon);
-  flex-shrink:0;animation:blink 1s step-end infinite;
-  box-shadow:0 0 6px var(--neon);border-radius:1px;
-}
+        .ln { margin-bottom: 5px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; font-size: 13px; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Keybar */
-#keybar{
-  display:flex;gap:3px;padding:4px 8px;
-  background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.04);
-  overflow-x:auto;scrollbar-width:none;flex-shrink:0;
-}
-#keybar::-webkit-scrollbar{display:none}
-.kb{
-  background:var(--sur);border:1px solid rgba(255,255,255,.1);
-  color:var(--dim);padding:3px 9px;border-radius:4px;
-  font-size:11px;cursor:pointer;white-space:nowrap;
-  font-family:var(--font);transition:.12s;flex-shrink:0;user-select:none;
-}
-.kb:hover,.kb:active{color:var(--neon);border-color:rgba(0,255,231,.4);background:rgba(0,255,231,.06)}
-.kb.danger{color:rgba(255,0,110,.7)}
-.kb.danger:hover{color:var(--neon3);border-color:var(--neon3)}
+        /* Interaction */
+        #inputWrap { display: flex; align-items: center; padding: 10px 15px; background: var(--sur); border-top: 1px solid rgba(255,255,255,0.05); }
+        .prompt { color: var(--neon); font-weight: bold; margin-right: 10px; }
+        #cmdIn { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: var(--font); font-size: 14px; }
 
-/* Status */
-#status{
-  display:flex;gap:12px;align-items:center;padding:2px 12px;
-  background:#060609;border-top:1px solid rgba(255,255,255,.03);
-  font-size:10px;color:var(--dim);flex-shrink:0;overflow:hidden;
-}
-#status b{color:var(--neon);font-weight:400}
-#stVFS{margin-left:auto;color:rgba(0,255,231,.35)}
+        /* Keybar for Mobile Power */
+        #keybar { display: flex; gap: 5px; padding: 8px; background: #000; overflow-x: auto; scrollbar-width: none; border-top: 1px solid #111; }
+        .kb { background: #111; border: 1px solid #222; color: #888; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        .kb:active { background: var(--neon); color: #000; }
 
-/* Editor */
-#edModal{
-  display:none;position:fixed;inset:0;z-index:500;
-  flex-direction:column;background:var(--bg);
-  border:1px solid rgba(191,0,255,.4);box-shadow:0 0 40px rgba(191,0,255,.2);
-}
-#edModal.open{display:flex}
-#edHdr{
-  display:flex;align-items:center;gap:8px;padding:7px 12px;
-  background:var(--sur);border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
-}
-#edTitle{color:var(--neon2);font-size:12px;flex:1;font-family:var(--font)}
-#edKeys{font-size:10px;color:var(--dim)}
-#edArea{
-  flex:1;background:var(--bg);color:var(--text);border:none;
-  outline:none;padding:12px 16px;font-family:var(--font);
-  font-size:var(--fs);resize:none;line-height:1.65;
-}
-.ebtn{
-  background:transparent;border:1px solid rgba(255,255,255,.15);
-  color:var(--text);padding:3px 10px;border-radius:4px;
-  cursor:pointer;font-size:11px;font-family:var(--font);transition:.12s;
-}
-.ebtn:hover{color:var(--neon);border-color:var(--neon)}
-.ebtn.save{color:var(--green);border-color:rgba(0,255,65,.3)}
-.ebtn.save:hover{border-color:var(--green)}
-
-/* Autocomplete */
-#ac{
-  display:none;position:fixed;
-  background:var(--sur2);border:1px solid rgba(0,255,231,.3);
-  border-radius:6px;font-family:var(--font);font-size:12px;
-  z-index:200;max-height:160px;overflow-y:auto;
-  box-shadow:0 0 20px rgba(0,255,231,.15);min-width:160px;
-}
-.ac-i{padding:5px 12px;color:var(--text);cursor:pointer;display:flex;gap:8px}
-.ac-i:hover,.ac-i.sel{background:rgba(0,255,231,.08);color:var(--neon)}
-.ac-type{color:var(--dim);font-size:10px}
-
-@media(max-width:480px){
-  :root{--fs:12px}
-  #logo{font-size:12px;letter-spacing:1px}
-}
-</style>
+        /* Colors */
+        .ok { color: var(--green); } .err { color: var(--red); } .sys { color: var(--neon2); } .warn { color: var(--amber); }
+    </style>
 </head>
 <body>
-<div id="app">
-  <div id="hdr">
-    <div class="dots">
-      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
-    </div>
-    <div id="logo">Arsh<em>UX</em><sup>v4</sup></div>
+
+<div id="hdr">
+    <div id="logo">ARSHUX<span>OMNI</span></div>
     <div id="tabs"></div>
-    <button id="newTab" title="New Tab (Ctrl+T)">＋</button>
-    <div id="hdrBtns">
-      <button class="hbtn" onclick="UI.toggleTheme()">◑</button>
-      <button class="hbtn" onclick="UI.showHelp()">?</button>
-      <button class="hbtn" onclick="UI.clearActive()">⌫</button>
-    </div>
-  </div>
-
-  <div id="terminals"></div>
-
-  <div id="keybar">
-    <button class="kb danger" onclick="Shell.sendCtrl(3)">Ctrl+C</button>
-    <button class="kb danger" onclick="Shell.sendCtrl(4)">Ctrl+D</button>
-    <button class="kb" onclick="UI.clearActive()">Ctrl+L</button>
-    <button class="kb" onclick="AC.triggerTab()">Tab↹</button>
-    <button class="kb" onclick="Shell.navHistory(-1)">↑</button>
-    <button class="kb" onclick="Shell.navHistory(1)">↓</button>
-    <button class="kb" onclick="Input.insert('|')">|</button>
-    <button class="kb" onclick="Input.insert(' > ')"> &gt; </button>
-    <button class="kb" onclick="Input.insert(' >> ')"> &gt;&gt; </button>
-    <button class="kb" onclick="Input.insert('/')">/</button>
-    <button class="kb" onclick="Input.insert(' -')"> -</button>
-    <button class="kb" onclick="Input.insert('\"')">"</button>
-  </div>
-
-  <div id="inputWrap">
-    <div id="promptLabel">
-      <span id="promptDir">~</span><span id="promptSym"> ❯ </span>
-    </div>
-    <input id="cmdIn" type="text" autocomplete="off" spellcheck="false"
-           autocorrect="off" autocapitalize="none" placeholder=""/>
-    <div class="cursor"></div>
-    <button class="hbtn" onclick="Input.paste()">📋</button>
-  </div>
-
-  <div id="status">
-    <span>ArshUX<b>v4</b></span>
-    <span>dir:<b id="stDir">~</b></span>
-    <span>cmds:<b id="stCmds">0</b></span>
-    <span id="stClock"></span>
-    <span id="stVFS"></span>
-  </div>
+    <button onclick="Omni.newTab()" style="background:none; border:1px dashed var(--neon); color:var(--neon); padding:2px 10px; border-radius:4px; margin-left:10px;">+</button>
 </div>
 
-<div id="edModal">
-  <div id="edHdr">
-    <span id="edTitle">nano</span>
-    <button class="ebtn save" onclick="Editor.save()">💾 Save</button>
-    <button class="ebtn" onclick="Editor.close()">✕</button>
-  </div>
-  <textarea id="edArea" spellcheck="false"></textarea>
+<div id="terminals"></div>
+
+<div id="keybar">
+    <button class="kb" onclick="Omni.sendKey('Tab')">TAB</button>
+    <button class="kb" onclick="Omni.sendKey('ArrowUp')">UP</button>
+    <button class="kb" onclick="Omni.sendKey('ArrowDown')">DOWN</button>
+    <button class="kb" onclick="Omni.insert('|')">|</button>
+    <button class="kb" onclick="Omni.insert(' && ')">&&</button>
+    <button class="kb" onclick="Omni.insert(' > ')">></button>
+    <button class="kb" onclick="Omni.sendCtrlC()">CTRL+C</button>
 </div>
 
-<div id="ac"></div>
+<div id="inputWrap">
+    <span class="prompt" id="currentDir">~ ❯</span>
+    <input id="cmdIn" type="text" autofocus autocomplete="off" spellcheck="false">
+</div>
 
 <script>
-'use strict';
+    // --- OMNI STORAGE (IndexedDB Wrapper) ---
+    const DB = {
+        name: "ArshUX_Omni_DB",
+        async init() {
+            return new Promise(res => {
+                let req = indexedDB.open(this.name, 1);
+                req.onupgradeneeded = e => e.target.result.createObjectStore("files");
+                req.onsuccess = e => { this.db = e.target.result; res(); };
+            });
+        },
+        async save(path, content) {
+            let tx = this.db.transaction("files", "readwrite").objectStore("files");
+            tx.put(content, path);
+        },
+        async load(path) {
+            return new Promise(res => {
+                let tx = this.db.transaction("files", "readonly").objectStore("files");
+                let req = tx.get(path);
+                req.onsuccess = () => res(req.result);
+            });
+        },
+        async getAll() {
+            return new Promise(res => {
+                let tx = this.db.transaction("files", "readonly").objectStore("files");
+                let req = tx.getAllKeys();
+                req.onsuccess = () => res(req.result);
+            });
+        }
+    };
 
-// ── IndexedDB ──
-const DB = (() => {
-  let db;
-  const DB_NAME='arshux_v4_pro', STORE='vfs';
-  function open() {
-    return new Promise((res,rej)=>{
-      const req = indexedDB.open(DB_NAME,3);
-      req.onupgradeneeded = e => { if(!e.target.result.objectStoreNames.contains(STORE)) e.target.result.createObjectStore(STORE); };
-      req.onsuccess = e => { db=e.target.result; res(db); };
-      req.onerror = () => rej(req.error);
-    });
-  }
-  function tx(mode){ return db.transaction(STORE,mode).objectStore(STORE); }
-  return {
-    async get(k){ return new Promise(r=>{ const q=tx('readonly').get(k); q.onsuccess=()=>r(q.result); q.onerror=()=>r(null); }); },
-    async set(k,v){ return new Promise(r=>{ const q=tx('readwrite').put(v,k); q.onsuccess=()=>r(true); q.onerror=()=>r(false); }); },
-    async del(k){ return new Promise(r=>{ const q=tx('readwrite').delete(k); q.onsuccess=()=>r(true); q.onerror=()=>r(false); }); },
-    async keys(){ return new Promise(r=>{ const q=tx('readonly').getAllKeys(); q.onsuccess=()=>r(q.result||[]); q.onerror=()=>r([]); }); },
-    open
-  };
-})();
-
-// ── VFS ──
-const VFS = (() => {
-  let pyodide = null;
-  const DEFAULTS = {
-    '/': {t:'d',c:['home','bin']},
-    '/home': {t:'d',c:['arsh']},
-    '/home/arsh': {t:'d',c:['readme.txt']},
-    '/home/arsh/readme.txt': {t:'f',content:'Welcome Rana Hamza! ArshUX v4 Pro is ready.\nTry "wget", "python3", or "git".'}
-  };
-  const cache={};
-  let saveTimer=null;
-
-  function schedSave(){
-    clearTimeout(saveTimer);
-    saveTimer=setTimeout(async ()=>{
-      for(let k in cache) await DB.set(k, cache[k]);
-      document.getElementById('stVFS').textContent='✓ saved';
-    },500);
-    document.getElementById('stVFS').textContent='💾 saving…';
-  }
-
-  return {
-    async init(){
-      await DB.open();
-      const keys=await DB.keys();
-      if(!keys.length){ for(let k in DEFAULTS) { cache[k]=DEFAULTS[k]; await DB.set(k,DEFAULTS[k]); } }
-      else { for(let k of keys) cache[k]=await DB.get(k); }
-    },
-    async initPy(tab){ 
-        if(!pyodide) { 
-            Printer.ln(tab, "🌀 Initializing Python Engine...", "info"); 
-            pyodide = await loadPyodide(); 
-            Printer.ln(tab, "✓ Python 3.12 Ready", "ok"); 
-        } 
-        return pyodide; 
-    },
-    async runPy(tab, code){ 
-        const py = await this.initPy(tab); 
-        try { 
-            py.setStdout({ batched: (s) => Printer.ln(tab, s) }); 
-            return await py.runPythonAsync(code); 
-        } catch(e) { Printer.ln(tab, e.message, "err"); } 
-    },
-    get(p){return cache[p]||null;},
-    set(p,n){cache[p]=n;schedSave();},
-    resolve(cwd,p){
-        if(!p || p==='~') return '/home/arsh';
-        if(p.startsWith('/')) return p;
-        return (cwd === '/' ? '' : cwd) + '/' + p;
-    },
-    mkfile(path,content=''){
-      const par=path.substring(0, path.lastIndexOf('/')) || '/';
-      const name=path.split('/').pop();
-      if(!cache[par]) return false;
-      if(!cache[par].c.includes(name)) cache[par].c.push(name);
-      cache[path]={t:'f',content}; schedSave(); return true;
-    }
-  };
-})();
-
-// ── Tabs & UI ──
-const Tabs=(()=>{
-  let tabs=[],active=null,counter=0;
-  function mk(name){
-    const id='T'+(++counter);
-    const t={id,name:name||`bash ${counter}`,cwd:'/home/arsh',history:[],histIdx:-1,cmds:0};
-    tabs.push(t);
-    const pane=document.createElement('div');
-    pane.className='pane';pane.id='P'+id;
-    pane.innerHTML=`<div class="out" id="O${id}"></div>`;
-    document.getElementById('terminals').appendChild(pane);
-    const btn=document.createElement('div');
-    btn.className='tab';btn.id='B'+id;
-    btn.innerHTML=`<span onclick="Tabs.sw('${id}')">${t.name}</span><span class="tabx" onclick="Tabs.close('${id}')">✕</span>`;
-    document.getElementById('tabs').appendChild(btn);
-    sw(id);
-    if(counter===1) UI.boot(t);
-    return t;
-  }
-  function sw(id){
-    tabs.forEach(t=>{document.getElementById('P'+t.id)?.classList.remove('active');document.getElementById('B'+t.id)?.classList.remove('active');});
-    active=tabs.find(t=>t.id===id);
-    document.getElementById('P'+active.id).classList.add('active');
-    document.getElementById('B'+active.id).classList.add('active');
-    updateStatus();
-  }
-  function updateStatus(){
-    document.getElementById('promptDir').textContent=active.cwd.replace('/home/arsh','~');
-    document.getElementById('stDir').textContent=active.cwd;
-    document.getElementById('stCmds').textContent=active.cmds;
-  }
-  return{mk,sw,get active(){return active;},updateStatus};
-})();
-
-const Printer={
-  ln(tab,text,cls=''){
-    const out=document.getElementById('O'+tab.id);
-    const d=document.createElement('div');
-    d.className='ln '+(cls||'');
-    d.textContent=text;
-    out.appendChild(d);
-    out.scrollTop=out.scrollHeight;
-  }
-};
-
-// ── Command Engine ──
-const Shell={
-    async run(tab, line){
-        line=line.trim(); if(!line) return;
-        tab.cmds++; Tabs.updateStatus();
-        Printer.ln(tab, `${tab.cwd.replace('/home/arsh','~')} ❯ ${line}`, 'cmd');
-        const [cmd, ...args] = line.split(' ');
+    // --- OMNI KERNEL ---
+    const Omni = {
+        tabs: [], activeTab: null, py: null,
         
-        if(Cmds[cmd]) await Cmds[cmd](tab, args);
-        else Printer.ln(tab, `arshux: command not found: ${cmd}`, 'err');
-    },
-    navHistory(dir){ /* History Logic */ }
-};
+        async boot() {
+            await DB.init();
+            this.newTab("main");
+            this.print("System: ArshUX Omni Kernel v1.0 loaded.", "sys");
+            this.print("User: Rana Hamza | Location: Faisalabad", "ok");
+            this.print("Type 'help' for advanced neural commands.", "warn");
+        },
 
-const Cmds = {
-    async help(tab){ Printer.ln(tab, "Available: ls, cat, wget, python3, nano, clear, help", "info"); },
-    async clear(tab){ document.getElementById('O'+tab.id).innerHTML=''; },
-    async ls(tab){
-        const n = VFS.get(tab.cwd);
-        Printer.ln(tab, n.c.join('  '), "ok");
-    },
-    async cat(tab, args){
-        const fp = VFS.resolve(tab.cwd, args[0]);
-        const n = VFS.get(fp);
-        if(n) Printer.ln(tab, n.content);
-        else Printer.ln(tab, "cat: file not found", "err");
-    },
-    async wget(tab, args){
-        const url = args[0]; if(!url) return;
-        const fname = url.split('/').pop() || 'index.html';
-        Printer.ln(tab, `Downloading from ${url}...`, "info");
-        try {
-            const res = await fetch(url);
-            const text = await res.text();
-            VFS.mkfile(VFS.resolve(tab.cwd, fname), text);
-            Printer.ln(tab, `✓ Saved ${fname}`, "ok");
-        } catch(e) { Printer.ln(tab, "Network Error", "err"); }
-    },
-    async python3(tab, args){
-        if(!args[0]) return Printer.ln(tab, "Usage: python3 file.py", "warn");
-        const fp = VFS.resolve(tab.cwd, args[0]);
-        const n = VFS.get(fp);
-        if(n) await VFS.runPy(tab, n.content);
-        else Printer.ln(tab, "python3: file not found", "err");
-    },
-    async nano(tab, args){
-        if(!args[0]) return;
-        const fp = VFS.resolve(tab.cwd, args[0]);
-        const n = VFS.get(fp);
-        Editor.open(fp, n ? n.content : '');
-    }
-};
+        newTab(name = "bash") {
+            const id = "T" + Date.now();
+            const tab = { id, name, cwd: "/home/arsh", history: [], hIdx: -1 };
+            this.tabs.push(tab);
 
-const Editor = {
-    file: null,
-    open(fp, content){
-        this.file=fp; document.getElementById('edArea').value=content;
-        document.getElementById('edModal').classList.add('open');
-    },
-    save(){
-        VFS.mkfile(this.file, document.getElementById('edArea').value);
-        this.close();
-    },
-    close(){ document.getElementById('edModal').classList.remove('open'); }
-};
+            // Tab Button
+            const btn = document.createElement('div');
+            btn.className = 'tab'; btn.id = 'btn' + id;
+            btn.innerText = name;
+            btn.onclick = () => this.switch(id);
+            document.getElementById('tabs').appendChild(btn);
 
-const UI = {
-    boot(tab){
-        Printer.ln(tab, "ArshUX v4.0 Pro System Initialized", "sys");
-        Printer.ln(tab, "Kernel: WASM/JS Hybrid", "dim");
-        Printer.ln(tab, "User: Rana Hamza", "ok");
-        Printer.ln(tab, "Welcome. Type 'help' to begin.", "info");
-    },
-    toggleTheme(){ document.body.style.filter = document.body.style.filter ? '' : 'invert(1) hue-rotate(180deg)'; }
-};
+            // Pane
+            const pane = document.createElement('div');
+            pane.className = 'pane'; pane.id = id;
+            document.getElementById('terminals').appendChild(pane);
 
-// ── Events ──
-document.getElementById('cmdIn').addEventListener('keydown', async e => {
-    if(e.key === 'Enter'){
-        const line = e.target.value; e.target.value = '';
-        await Shell.run(Tabs.active, line);
-    }
-});
+            this.switch(id);
+        },
 
-VFS.init().then(()=>Tabs.mk());
+        switch(id) {
+            this.tabs.forEach(t => {
+                document.getElementById(t.id).classList.remove('active');
+                document.getElementById('btn' + t.id).classList.remove('active');
+            });
+            this.activeTab = this.tabs.find(t => t.id === id);
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn' + id).classList.add('active');
+            document.getElementById('cmdIn').focus();
+        },
+
+        print(msg, cls = "") {
+            const p = document.getElementById(this.activeTab.id);
+            const d = document.createElement('div');
+            d.className = 'ln ' + cls;
+            d.textContent = msg;
+            p.appendChild(d);
+            p.scrollTop = p.scrollHeight;
+        },
+
+        async exec(raw) {
+            if(!raw.trim()) return;
+            const tab = this.activeTab;
+            tab.history.unshift(raw);
+            tab.hIdx = -1;
+            
+            this.print(`~ ❯ ${raw}`, "neon");
+            const [cmd, ...args] = raw.split(' ');
+
+            switch(cmd) {
+                case 'help':
+                    this.print("Navigation: ls, cd, pwd, clear");
+                    this.print("FileOps: touch, cat, rm, write");
+                    this.print("Engines: python3, git, ai");
+                    this.print("Social: whoami, banner, matrix");
+                    break;
+                case 'ls':
+                    const keys = await DB.getAll();
+                    this.print(keys.length ? keys.join('  ') : "Directory empty.", "ok");
+                    break;
+                case 'write':
+                    if(args.length < 2) return this.print("Usage: write [file] [content]", "err");
+                    await DB.save(args[0], args.slice(1).join(' '));
+                    this.print(`File '${args[0]}' saved to IndexedDB.`, "ok");
+                    break;
+                case 'cat':
+                    const content = await DB.load(args[0]);
+                    this.print(content || "File not found.", content ? "" : "err");
+                    break;
+                case 'python3':
+                    if(!this.py) {
+                        this.print("Loading Python Engine...", "sys");
+                        this.py = await loadPyodide();
+                    }
+                    try {
+                        const code = args.join(' ') || "print('Python Omni Active')";
+                        let res = await this.py.runPythonAsync(code);
+                        if(res) this.print(res, "ok");
+                    } catch(e) { this.print(e.message, "err"); }
+                    break;
+                case 'matrix':
+                    for(let i=0; i<5; i++) this.print(Math.random().toString(2).substr(2, 30), "ok");
+                    break;
+                case 'clear':
+                    document.getElementById(tab.id).innerHTML = '';
+                    break;
+                case 'whoami':
+                    this.print("Rana Hamza | UI/UX Architect & Developer");
+                    break;
+                default:
+                    this.print(`Omni: Command '${cmd}' not found.`, "err");
+            }
+        },
+
+        insert(str) {
+            const input = document.getElementById('cmdIn');
+            input.value += str;
+            input.focus();
+        },
+
+        sendKey(key) {
+            const event = new KeyboardEvent('keydown', { key: key });
+            document.getElementById('cmdIn').dispatchEvent(event);
+        },
+
+        sendCtrlC() {
+            this.print("^C", "err");
+            document.getElementById('cmdIn').value = '';
+        }
+    };
+
+    // --- EVENTS ---
+    document.getElementById('cmdIn').addEventListener('keydown', async (e) => {
+        if(e.key === 'Enter') {
+            const val = e.target.value;
+            e.target.value = '';
+            await Omni.exec(val);
+        }
+        if(e.key === 'ArrowUp') {
+            const tab = Omni.activeTab;
+            if(tab.history.length > tab.hIdx + 1) {
+                tab.hIdx++;
+                e.target.value = tab.history[tab.hIdx];
+            }
+        }
+    });
+
+    // START OMNI
+    Omni.boot();
 </script>
 </body>
 </html>
