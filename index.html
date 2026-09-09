@@ -1,253 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>ArshUX OMNI | Rana Hamza</title>
-    
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-    <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
-    <script src="https://unpkg.com/isomorphic-git"></script>
-    <script src="https://unpkg.com/isomorphic-git/http/web/index.umd.js"></script>
-
-    <style>
-        :root {
-            --neon: #00ffe7; --neon2: #bf00ff; --bg: #050508; --sur: #0d0d16;
-            --text: #e0e6ed; --green: #00ff41; --red: #ff4060; --amber: #ffb300;
-            --font: 'Fira Code', 'Courier New', monospace;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--text); font-family: var(--font); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-
-        /* UI Glassmorphism */
-        #hdr { display: flex; align-items: center; padding: 12px; background: rgba(13, 13, 22, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 231, 0.2); z-index: 10; }
-        #logo { font-size: 16px; font-weight: bold; letter-spacing: 2px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
-        #logo span { color: var(--neon2); }
-
-        #tabs { display: flex; gap: 8px; flex: 1; margin-left: 20px; overflow-x: auto; scrollbar-width: none; }
-        .tab { padding: 4px 15px; background: #1a1a2e; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; transition: 0.3s; }
-        .tab.active { border-color: var(--neon); box-shadow: 0 0 8px rgba(0, 255, 231, 0.3); color: var(--neon); }
-
-        /* Terminal Core */
-        #terminals { flex: 1; position: relative; }
-        .pane { position: absolute; inset: 0; display: none; flex-direction: column; padding: 15px; overflow-y: auto; scrollbar-width: thin; }
-        .pane.active { display: flex; }
-
-        .ln { margin-bottom: 5px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; font-size: 13px; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Interaction */
-        #inputWrap { display: flex; align-items: center; padding: 10px 15px; background: var(--sur); border-top: 1px solid rgba(255,255,255,0.05); }
-        .prompt { color: var(--neon); font-weight: bold; margin-right: 10px; }
-        #cmdIn { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: var(--font); font-size: 14px; }
-
-        /* Keybar for Mobile Power */
-        #keybar { display: flex; gap: 5px; padding: 8px; background: #000; overflow-x: auto; scrollbar-width: none; border-top: 1px solid #111; }
-        .kb { background: #111; border: 1px solid #222; color: #888; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-        .kb:active { background: var(--neon); color: #000; }
-
-        /* Colors */
-        .ok { color: var(--green); } .err { color: var(--red); } .sys { color: var(--neon2); } .warn { color: var(--amber); }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050508">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>ArshUX OMNI | Rana Hamza</title>
+  <style>
+    :root { --neon:#00ffe7; --neon2:#bf00ff; --bg:#050508; --sur:#0d0d16; --text:#e0e6ed; --green:#00ff41; --red:#ff4060; --amber:#ffb300; --font:'Fira Code','Courier New',monospace; }
+    [data-theme="matrix"] { --neon:#00ff41; --neon2:#72ff00; --bg:#020702; --sur:#071207; --text:#d9ffd9; --amber:#d7ff00; }
+    [data-theme="cyberpunk"] { --neon:#00f6ff; --neon2:#ff00c8; --bg:#10051b; --sur:#1c0b2c; --text:#f6e9ff; --green:#92ff00; }
+    [data-theme="dracula"] { --neon:#bd93f9; --neon2:#ff79c6; --bg:#282a36; --sur:#343746; --text:#f8f8f2; --green:#50fa7b; --amber:#f1fa8c; }
+    [data-theme="ubuntu"] { --neon:#ff7a00; --neon2:#e95420; --bg:#2c001e; --sur:#3d0730; --text:#f7e8ee; --green:#8ae234; --amber:#fce94f; }
+    [data-theme="hacker"] { --neon:#39ff14; --neon2:#39ff14; --bg:#000; --sur:#080808; --text:#c7ffc7; --green:#39ff14; --amber:#dfff00; }
+    [data-theme="windows95"] { --neon:#fff; --neon2:#000080; --bg:#008080; --sur:#c0c0c0; --text:#000; --green:#008000; --red:#800000; --amber:#808000; }
+    [data-theme="nord"] { --neon:#88c0d0; --neon2:#b48ead; --bg:#2e3440; --sur:#3b4252; --text:#eceff4; --green:#a3be8c; --red:#bf616a; --amber:#ebcb8b; }
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html { background:var(--bg); }
+    body { min-height:100vh; min-height:100dvh; overflow:hidden; display:flex; flex-direction:column; background:var(--bg); color:var(--text); font-family:var(--font); }
+    #hdr { display:flex; align-items:center; gap:10px; min-width:0; padding:calc(12px + env(safe-area-inset-top)) 12px 12px; background:color-mix(in srgb,var(--sur) 88%,transparent); backdrop-filter:blur(10px); border-bottom:1px solid color-mix(in srgb,var(--neon) 20%,transparent); }
+    #logo { flex:0 0 auto; color:var(--neon); font-size:16px; font-weight:bold; letter-spacing:2px; text-shadow:0 0 10px var(--neon); } #logo span { color:var(--neon2); }
+    #tabs { display:flex; flex:1 1 auto; gap:8px; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; }
+    .tab,.icon-button,.kb { border:1px solid color-mix(in srgb,var(--text) 14%,transparent); border-radius:4px; background:var(--sur); color:var(--text); font:inherit; cursor:pointer; }
+    .tab { flex:0 0 auto; padding:5px 14px; font-size:11px; white-space:nowrap; } .tab.active { border-color:var(--neon); box-shadow:0 0 8px color-mix(in srgb,var(--neon) 35%,transparent); color:var(--neon); }
+    .icon-button { flex:0 0 auto; min-width:32px; min-height:30px; border-style:dashed; border-color:var(--neon); color:var(--neon); font-size:18px; }
+    #terminals { flex:1 1 auto; min-width:0; min-height:0; position:relative; overflow:hidden; } .pane { position:absolute; inset:0; display:none; min-width:0; padding:15px; overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; } .pane.active { display:block; }
+    .ln { margin-bottom:5px; font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; animation:fade-in .18s ease; } .ok { color:var(--green); } .err { color:var(--red); } .sys { color:var(--neon2); } .warn { color:var(--amber); } .muted { opacity:.72; } @keyframes fade-in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    #suggestions { flex:0 0 auto; min-height:0; padding:0 15px; background:var(--sur); color:var(--amber); font-size:12px; line-height:1.5; } #suggestions:empty { display:none; }
+    #keybar { display:flex; flex:0 0 auto; gap:5px; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; padding:8px max(8px,env(safe-area-inset-right)) 8px max(8px,env(safe-area-inset-left)); background:#000; border-top:1px solid #111; scrollbar-width:none; }
+    .kb { flex:0 0 auto; min-height:34px; padding:5px 11px; font-size:12px; color:var(--text); } .kb:active { color:#000; background:var(--neon); }
+    #inputWrap { display:flex; flex:0 0 auto; align-items:center; min-width:0; padding:10px 15px calc(10px + env(safe-area-inset-bottom)); background:var(--sur); border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent); } .prompt { flex:0 1 auto; max-width:42%; margin-right:10px; overflow:hidden; color:var(--neon); font-weight:bold; text-overflow:ellipsis; white-space:nowrap; } #cmdIn { flex:1 1 auto; min-width:0; border:0; outline:0; background:transparent; color:var(--text); font:16px var(--font); }
+    button:focus-visible,#cmdIn:focus-visible { outline:2px solid var(--neon); outline-offset:2px; }
+    @media (max-width:480px) { #hdr { gap:6px; padding:calc(8px + env(safe-area-inset-top)) 8px 8px; } #logo { font-size:13px; letter-spacing:1px; } #tabs { gap:5px; } .tab { padding:5px 9px; } .pane { padding:10px; } .ln { font-size:12px; line-height:1.5; } #suggestions { padding:0 10px; } #inputWrap { padding:9px 10px calc(9px + env(safe-area-inset-bottom)); } .prompt { margin-right:7px; } #keybar { padding-top:6px; padding-bottom:6px; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; scroll-behavior:auto !important; } }
+  </style>
 </head>
 <body>
-
-<div id="hdr">
-    <div id="logo">ARSHUX<span>OMNI</span></div>
-    <div id="tabs"></div>
-    <button onclick="Omni.newTab()" style="background:none; border:1px dashed var(--neon); color:var(--neon); padding:2px 10px; border-radius:4px; margin-left:10px;">+</button>
-</div>
-
-<div id="terminals"></div>
-
-<div id="keybar">
-    <button class="kb" onclick="Omni.sendKey('Tab')">TAB</button>
-    <button class="kb" onclick="Omni.sendKey('ArrowUp')">UP</button>
-    <button class="kb" onclick="Omni.sendKey('ArrowDown')">DOWN</button>
-    <button class="kb" onclick="Omni.insert('|')">|</button>
-    <button class="kb" onclick="Omni.insert(' && ')">&&</button>
-    <button class="kb" onclick="Omni.insert(' > ')">></button>
-    <button class="kb" onclick="Omni.sendCtrlC()">CTRL+C</button>
-</div>
-
-<div id="inputWrap">
-    <span class="prompt" id="currentDir">~ ❯</span>
-    <input id="cmdIn" type="text" autofocus autocomplete="off" spellcheck="false">
-</div>
-
-<script>
-    // --- OMNI STORAGE (IndexedDB Wrapper) ---
-    const DB = {
-        name: "ArshUX_Omni_DB",
-        async init() {
-            return new Promise(res => {
-                let req = indexedDB.open(this.name, 1);
-                req.onupgradeneeded = e => e.target.result.createObjectStore("files");
-                req.onsuccess = e => { this.db = e.target.result; res(); };
-            });
-        },
-        async save(path, content) {
-            let tx = this.db.transaction("files", "readwrite").objectStore("files");
-            tx.put(content, path);
-        },
-        async load(path) {
-            return new Promise(res => {
-                let tx = this.db.transaction("files", "readonly").objectStore("files");
-                let req = tx.get(path);
-                req.onsuccess = () => res(req.result);
-            });
-        },
-        async getAll() {
-            return new Promise(res => {
-                let tx = this.db.transaction("files", "readonly").objectStore("files");
-                let req = tx.getAllKeys();
-                req.onsuccess = () => res(req.result);
-            });
-        }
-    };
-
-    // --- OMNI KERNEL ---
-    const Omni = {
-        tabs: [], activeTab: null, py: null,
-        
-        async boot() {
-            await DB.init();
-            this.newTab("main");
-            this.print("System: ArshUX Omni Kernel v1.0 loaded.", "sys");
-            this.print("User: Rana Hamza | Location: Faisalabad", "ok");
-            this.print("Type 'help' for advanced neural commands.", "warn");
-        },
-
-        newTab(name = "bash") {
-            const id = "T" + Date.now();
-            const tab = { id, name, cwd: "/home/arsh", history: [], hIdx: -1 };
-            this.tabs.push(tab);
-
-            // Tab Button
-            const btn = document.createElement('div');
-            btn.className = 'tab'; btn.id = 'btn' + id;
-            btn.innerText = name;
-            btn.onclick = () => this.switch(id);
-            document.getElementById('tabs').appendChild(btn);
-
-            // Pane
-            const pane = document.createElement('div');
-            pane.className = 'pane'; pane.id = id;
-            document.getElementById('terminals').appendChild(pane);
-
-            this.switch(id);
-        },
-
-        switch(id) {
-            this.tabs.forEach(t => {
-                document.getElementById(t.id).classList.remove('active');
-                document.getElementById('btn' + t.id).classList.remove('active');
-            });
-            this.activeTab = this.tabs.find(t => t.id === id);
-            document.getElementById(id).classList.add('active');
-            document.getElementById('btn' + id).classList.add('active');
-            document.getElementById('cmdIn').focus();
-        },
-
-        print(msg, cls = "") {
-            const p = document.getElementById(this.activeTab.id);
-            const d = document.createElement('div');
-            d.className = 'ln ' + cls;
-            d.textContent = msg;
-            p.appendChild(d);
-            p.scrollTop = p.scrollHeight;
-        },
-
-        async exec(raw) {
-            if(!raw.trim()) return;
-            const tab = this.activeTab;
-            tab.history.unshift(raw);
-            tab.hIdx = -1;
-            
-            this.print(`~ ❯ ${raw}`, "neon");
-            const [cmd, ...args] = raw.split(' ');
-
-            switch(cmd) {
-                case 'help':
-                    this.print("Navigation: ls, cd, pwd, clear");
-                    this.print("FileOps: touch, cat, rm, write");
-                    this.print("Engines: python3, git, ai");
-                    this.print("Social: whoami, banner, matrix");
-                    break;
-                case 'ls':
-                    const keys = await DB.getAll();
-                    this.print(keys.length ? keys.join('  ') : "Directory empty.", "ok");
-                    break;
-                case 'write':
-                    if(args.length < 2) return this.print("Usage: write [file] [content]", "err");
-                    await DB.save(args[0], args.slice(1).join(' '));
-                    this.print(`File '${args[0]}' saved to IndexedDB.`, "ok");
-                    break;
-                case 'cat':
-                    const content = await DB.load(args[0]);
-                    this.print(content || "File not found.", content ? "" : "err");
-                    break;
-                case 'python3':
-                    if(!this.py) {
-                        this.print("Loading Python Engine...", "sys");
-                        this.py = await loadPyodide();
-                    }
-                    try {
-                        const code = args.join(' ') || "print('Python Omni Active')";
-                        let res = await this.py.runPythonAsync(code);
-                        if(res) this.print(res, "ok");
-                    } catch(e) { this.print(e.message, "err"); }
-                    break;
-                case 'matrix':
-                    for(let i=0; i<5; i++) this.print(Math.random().toString(2).substr(2, 30), "ok");
-                    break;
-                case 'clear':
-                    document.getElementById(tab.id).innerHTML = '';
-                    break;
-                case 'whoami':
-                    this.print("Rana Hamza | UI/UX Architect & Developer");
-                    break;
-                default:
-                    this.print(`Omni: Command '${cmd}' not found.`, "err");
-            }
-        },
-
-        insert(str) {
-            const input = document.getElementById('cmdIn');
-            input.value += str;
-            input.focus();
-        },
-
-        sendKey(key) {
-            const event = new KeyboardEvent('keydown', { key: key });
-            document.getElementById('cmdIn').dispatchEvent(event);
-        },
-
-        sendCtrlC() {
-            this.print("^C", "err");
-            document.getElementById('cmdIn').value = '';
-        }
-    };
-
-    // --- EVENTS ---
-    document.getElementById('cmdIn').addEventListener('keydown', async (e) => {
-        if(e.key === 'Enter') {
-            const val = e.target.value;
-            e.target.value = '';
-            await Omni.exec(val);
-        }
-        if(e.key === 'ArrowUp') {
-            const tab = Omni.activeTab;
-            if(tab.history.length > tab.hIdx + 1) {
-                tab.hIdx++;
-                e.target.value = tab.history[tab.hIdx];
-            }
-        }
-    });
-
-    // START OMNI
-    Omni.boot();
-</script>
+  <header id="hdr"><div id="logo" aria-label="ArshUX Omni">ARSHUX<span>OMNI</span></div><nav id="tabs" aria-label="Terminal sessions"></nav><button id="newTab" class="icon-button" type="button" aria-label="Open new terminal tab" title="Open new terminal tab">+</button></header>
+  <main id="terminals" aria-label="Terminal output" aria-live="polite"></main>
+  <div id="suggestions" aria-live="polite"></div>
+  <div id="keybar" aria-label="Terminal special keys"><button class="kb" type="button" data-key="Tab">TAB</button><button class="kb" type="button" data-key="ArrowUp">UP</button><button class="kb" type="button" data-key="ArrowDown">DOWN</button><button class="kb" type="button" data-insert="|">|</button><button class="kb" type="button" data-insert=" && ">&amp;&amp;</button><button class="kb" type="button" data-insert=" > ">&gt;</button><button class="kb" type="button" data-key="Escape">ESC</button><button class="kb" type="button" data-key="CtrlC">CTRL+C</button></div>
+  <div id="inputWrap"><span class="prompt" id="currentDir">~ ❯</span><input id="cmdIn" type="text" aria-label="Terminal command" enterkeyhint="send" autocapitalize="off" autocomplete="off" spellcheck="false"></div>
+  <script src="app.js" defer></script>
 </body>
 </html>
