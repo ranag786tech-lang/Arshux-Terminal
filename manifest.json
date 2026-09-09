@@ -1,7 +1,7 @@
 {
-  "name": "ArshUX Terminal",
-  "short_name": "ArshUX",
-  "description": "Offline-first portfolio terminal with a persistent virtual filesystem.",
+  "name": "Arshux Omni",
+  "short_name": "Omni",
+  "description": "AI-powered browser developer workspace with persistent files and Python.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -10,7 +10,11 @@
   "background_color": "#050508",
   "theme_color": "#050508",
   "lang": "en",
-  "categories": ["productivity", "utilities", "developer"],
+  "categories": [
+    "productivity",
+    "utilities",
+    "developer"
+  ],
   "icons": [
     {
       "src": "icons/icon-72.png",
@@ -66,7 +70,13 @@
       "name": "New Tab",
       "short_name": "New Tab",
       "url": "./?action=new_tab",
-      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png" }]
+      "icons": [
+        {
+          "src": "icons/icon-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
