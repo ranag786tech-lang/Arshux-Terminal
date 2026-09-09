@@ -1,4 +1,4 @@
-const CACHE = 'arshux-v5';
+const CACHE = 'arshux-omni-v6';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1,6 +1,6 @@
-# ⚡ ArshUX Terminal
+# ⚡ Arshux Omni — AI-Powered Developer Operating Environment
 
-ArshUX Terminal is a dependency-free, offline-first portfolio terminal with a neon terminal aesthetic. It is a static Progressive Web App: no build step, server, framework runtime, or account is required.
+Arshux Omni is a dependency-free, mobile-first browser developer workspace with a Linux-inspired terminal, persistent local files, real browser Python, public GitHub imports, and an AI-provider integration contract. It remains a static Progressive Web App: no build step, server, framework runtime, or account is required for its local features.
 
 ![ArshUX Terminal screenshot](screenshots/screen1.png)
 
@@ -8,8 +8,10 @@ ArshUX Terminal is a dependency-free, offline-first portfolio terminal with a ne
 
 - Persistent virtual filesystem backed by IndexedDB
 - Multiple terminal sessions, command history, keyboard shortcuts, and mobile special keys
-- Filesystem commands, aliases, tab completion, suggestions, and useful validation errors
-- Portfolio commands powered by one centralized configuration object
+- Filesystem commands, aliases, tab completion, suggestions, validation errors, built-in editor, upload/download, and File System Access support
+- Persistent Pyodide Python sessions with captured `print()` output
+- Public GitHub repository imports and commit-history viewing, subject to GitHub API limits
+- Safe AI command contract with a production backend integration path
 - Seven optional themes: Matrix, Cyberpunk, Dracula, Ubuntu, Hacker, Windows 95, and Nord
 - Offline app shell, installable manifest, Android/desktop icons, and a service worker
 - Mobile-first terminal layout with safe-area support and a scrollable terminal viewport
@@ -18,7 +20,8 @@ ArshUX Terminal is a dependency-free, offline-first portfolio terminal with a ne
 
 | Group | Commands |
 | --- | --- |
-| Filesystem | `ls`, `cd`, `pwd`, `mkdir`, `touch`, `cat`, `write`, `rm -r`, `tree` |
+| Filesystem | `ls`, `cd`, `pwd`, `mkdir -p`, `touch`, `cat`, `write`, `rm -r`, `cp`, `mv`, `tree`, `edit`, `upload`, `download`, `fs-access` |
+| Developer | `python3`, `git`, `pkg`, `ai` |
 | Terminal | `help`, `clear`, `alias`, `theme`, `Tab`, `↑`, `↓`, `Ctrl+L`, `Esc`, `Ctrl+C` |
 | Portfolio | `about`, `skills`, `projects`, `contact`, `resume`, `socials`, `whoami` |
 | Fun | `coffee`, `fortune`, `matrix`, `hack nasa`, `sudo make me a sandwich` |
@@ -31,6 +34,9 @@ cd notes
 write ideas.txt "Ship the useful thing first"
 cat ideas.txt
 theme dracula
+git clone octocat/Hello-World
+python3 "x = 21"
+python3 "print(x * 2)"
 alias ll=ls
 ```
 
@@ -67,11 +73,9 @@ Open `http://localhost:8080` and use your browser's **Install app** action. On A
 
 The terminal has labelled controls, visible keyboard focus, reduced-motion handling, mobile-friendly input sizing, safe-area padding, and horizontally scrollable tab/special-key strips. The output pane is the only vertical scroll region, which prevents the command input from being pushed off-screen by long output or a mobile keyboard.
 
-## Roadmap
+## Architecture and roadmap
 
-- Add close/rename controls for terminal sessions.
-- Add import/export for the virtual filesystem.
-- Add automated browser and PWA audit coverage when a browser runtime is available in CI.
+Read the complete [repository audit](docs/AUDIT_REPORT.md), [implementation report](docs/IMPLEMENTATION_REPORT.md), and [staged production architecture roadmap](docs/ARCHITECTURE_ROADMAP.md). These documents distinguish browser-real features from features that require an authenticated backend and isolated Linux execution plane.
 
 ## License
 
